@@ -1,0 +1,2052 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>一本勝負 ～五本で散る頭脳戦～</title>
+<meta name="description" content="指の本数を足して、ちょうど5本で相手の手を消す。昔ながらの手遊びに技カードの駆け引きを加えた、和室で正座して戦う頭脳戦。CPU対戦とふたり対戦に対応。">
+<meta name="theme-color" content="#c6b679">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="一本勝負 ～五本で散る頭脳戦～">
+<meta property="og:description" content="指の本数を足して、ちょうど5本で相手の手を消す。昔ながらの手遊びに技カードの駆け引きを加えた、和室で正座して戦う頭脳戦。CPU対戦とふたり対戦に対応。">
+<meta property="og:url" content="https://kofude-sha.github.io/ippon-shoubu/">
+<meta property="og:image" content="https://kofude-sha.github.io/ippon-shoubu/og.jpg">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<style>@font-face{font-family:"Yuji Syuku";src:url(fonts/YujiSyuku-subset.woff) format("woff");font-display:swap}</style>
+</head>
+<body>
+<style>
+/* Layout: one-screen board on graph paper — opponent's hands at top pointing down, yours at bottom pointing up, each with a row of technique cards at the outer edge; a dashed "desk line" between. */
+:root{
+  --paper:#f2f6f5; --grid:#dbe6e4; --grid-strong:#bfd3cf; --ink:#1b2632; --muted:#56666e; --card:#ffffff;
+  --blue:#2156b5; --blue-tint:#d9e5fa; --blue-wash:rgba(33,86,181,.16);
+  --red:#c4372a; --red-tint:#f9ddd7; --red-wash:rgba(196,55,42,.16);
+  --hl:#ffe14f; --good:#1f7a45;
+  --floor:var(--floor-l,none); --floor-c:#c6b679; --washi:rgba(252,249,241,.9); --washi-mid:rgba(252,249,241,.74); --wood:#5a3a1f;
+  --k0:#cf5a0c; --k1:#7a3fc0; --k2:#0d817d; --k3:#c22a5a; --k4:#3a7a1c; --k5:#36566f; --k6:#9a6a00; --k7:#a1347f;
+  --font-display:"Yuji Syuku","Hiragino Mincho ProN","Yu Mincho",serif;
+  --font-body:"Yuji Syuku","Hiragino Mincho ProN","Yu Mincho",serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#121a21; --grid:#1d2832; --grid-strong:#2a3a46; --ink:#e5ecef; --muted:#93a4ac; --card:#1a242d;
+  --blue:#7ea6ff; --blue-tint:#1c2b48; --blue-wash:rgba(126,166,255,.10);
+  --red:#ff8574; --red-tint:#46231f; --red-wash:rgba(255,133,116,.10);
+  --hl:#b8961a; --good:#6fd39a;
+  --floor:var(--floor-d,none); --floor-c:#5b5537; --washi:rgba(20,26,31,.88); --washi-mid:rgba(20,26,31,.7); --wood:#3b2817;
+  --k0:#ff9d57; --k1:#bb92ff; --k2:#4fd0c8; --k3:#ff7aa2; --k4:#93d86e; --k5:#9fc3df; --k6:#e8c35c; --k7:#f28bd6; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --paper:#121a21; --grid:#1d2832; --grid-strong:#2a3a46; --ink:#e5ecef; --muted:#93a4ac; --card:#1a242d;
+  --blue:#7ea6ff; --blue-tint:#1c2b48; --blue-wash:rgba(126,166,255,.10);
+  --red:#ff8574; --red-tint:#46231f; --red-wash:rgba(255,133,116,.10);
+  --hl:#b8961a; --good:#6fd39a;
+  --floor:var(--floor-d,none); --floor-c:#5b5537; --washi:rgba(20,26,31,.88); --washi-mid:rgba(20,26,31,.7); --wood:#3b2817;
+  --k0:#ff9d57; --k1:#bb92ff; --k2:#4fd0c8; --k3:#ff7aa2; --k4:#93d86e; --k5:#9fc3df; --k6:#e8c35c; --k7:#f28bd6; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0}
+body{
+  background-color:var(--floor-c); color:var(--ink); font-family:var(--font-body); font-weight:400; word-break:auto-phrase;
+  background-image:radial-gradient(ellipse 90% 60% at 50% 30%,rgba(255,236,200,.18),transparent 70%),radial-gradient(ellipse 130% 100% at 50% 50%,transparent 55%,rgba(30,18,6,.32)),var(--floor);
+  background-size:auto,auto,400px 400px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  -webkit-tap-highlight-color:transparent;
+}
+button{font:inherit;color:inherit}
+b,strong,th,h1,h2,h3,h4{font-weight:400}
+b,strong{-webkit-text-stroke:.03em currentColor}
+button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.app{max-width:560px;margin:0 auto;height:100%;min-height:560px;display:flex;flex-direction:column;position:relative;overflow:hidden;overflow:clip}
+header.top{position:relative;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 8px 6px 12px;margin-top:8px;background:var(--washi);border-radius:14px;box-shadow:0 2px 6px rgba(30,20,8,.18)}
+.brand{display:flex;flex-direction:column;min-width:0}
+.brand h1{font-family:var(--font-display);font-weight:400;font-size:clamp(1.05rem,5.2vw,1.4rem);margin:0;line-height:1.1;white-space:nowrap}
+.brand span{font-size:.72rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tools{display:flex;gap:6px;flex-shrink:0}
+.tbtn{border:2px solid var(--ink);background:var(--card);border-radius:999px;padding:5px 11px;font-weight:400;font-size:.8rem;cursor:pointer}
+.tbtn:disabled{opacity:.35;cursor:default}
+
+.board{position:relative;flex:1;min-height:0;display:grid;grid-template-rows:1fr auto 1fr;gap:4px;padding-block:2px 10px}
+.zone{position:relative;z-index:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border-radius:22px;padding-block:6px;transition:background .3s}
+.zone.c0.active{background:var(--blue-wash)}
+.zone.c1.active{background:var(--red-wash)}
+.bar{position:relative;z-index:3;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 10px}
+.who{display:flex;align-items:center;gap:6px;font-weight:400;font-size:.92rem;background:var(--washi);padding:3px 10px;border-radius:999px}
+.who small{font-weight:400;color:var(--muted);font-size:.72rem}
+.who i{width:12px;height:12px;border-radius:50%;display:inline-block}
+.c0 .who i{background:var(--blue)} .c1 .who i{background:var(--red)}
+.badge{background:var(--washi);font-size:.66rem;font-weight:400;border-radius:999px;padding:1px 7px;border:2px dashed currentColor;white-space:nowrap}
+.badge.b1{color:var(--k1)} .badge.b2{color:var(--k2)} .badge.b6{color:var(--k6)}
+.hands{position:relative;z-index:2;display:flex;gap:clamp(14px,7vw,44px);justify-content:center}
+/* the hands take whatever height their zone has left, so the whole board always fits the screen */
+.hands{flex:1 1 0;min-height:0;align-self:stretch;align-items:center;container-type:size}
+
+.cards{display:flex;gap:4px;align-items:center}
+.card{--cc:var(--ink);width:45px;height:60px;border:2px solid var(--ink);border-radius:9px;background:var(--card);display:grid;grid-template-rows:1fr auto;justify-items:center;align-items:center;padding:4px 2px 5px;cursor:pointer;box-shadow:2px 2px 0 var(--ink);transition:transform .15s,background .15s}
+.card .g{font-family:var(--font-display);font-size:1.25rem;line-height:1;color:var(--cc);display:grid;place-items:center}
+.card .g svg{width:22px;height:22px}
+.card .n{font-size:.6rem;font-weight:400;white-space:nowrap}
+.card.t0{--cc:var(--k0)} .card.t1{--cc:var(--k1)} .card.t2{--cc:var(--k2)} .card.t3{--cc:var(--k3)} .card.t4{--cc:var(--k4)} .card.t5{--cc:var(--k5)} .card.t6{--cc:var(--k6)} .card.t7{--cc:var(--k7)}
+.card.passive{border-style:dashed;box-shadow:none;opacity:1}
+.card.passive::before{content:"自動";position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--k5);color:var(--card);font-size:.5rem;font-weight:400;padding:0 4px;border-radius:5px;white-space:nowrap}
+.card:disabled{cursor:default;box-shadow:none}
+.card.off{opacity:.4}
+.card.armed{background:var(--hl);transform:translateY(-7px) rotate(-3deg)}
+.top .card.armed{transform:translateY(7px) rotate(3deg)}
+.card.back{background:repeating-linear-gradient(45deg,var(--red-tint) 0 6px,var(--card) 6px 12px)}
+.card.back .g{color:var(--muted)}
+.c0 .card.back{background:repeating-linear-gradient(45deg,var(--blue-tint) 0 6px,var(--card) 6px 12px)}
+.overlay.solid{background-color:var(--floor-c);background-image:radial-gradient(ellipse 90% 60% at 50% 30%,rgba(255,236,200,.2),transparent 70%),radial-gradient(ellipse 130% 100% at 50% 50%,transparent 55%,rgba(30,18,6,.35)),var(--floor);background-size:auto,auto,400px 400px}
+.card.flash{animation:flash .9s ease-out}
+@keyframes flash{0%{transform:scale(1)}30%{transform:scale(1.25) rotate(4deg);background:var(--hl)}100%{transform:scale(1)}}
+.nocard{font-size:.72rem;color:var(--muted);background:var(--washi);padding:2px 8px;border-radius:999px}
+
+.hand{position:relative;isolation:isolate;width:clamp(78px,min(31vw,14vh),136px);width:clamp(56px,min(31vw,14vh,calc(100cqh / 1.7)),136px);background:none;border:0;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;transition:transform .2s}
+.hand:disabled{cursor:default}
+.hand svg{width:100%;height:auto;display:block;overflow:visible}
+.hand img,.jk img,.vs img,.th img{display:block;height:auto;pointer-events:none;user-select:none;-webkit-user-drag:none}
+.hand img{width:100%}
+.limb{position:relative;display:block;width:100%;filter:drop-shadow(0 4px 6px rgba(30,18,6,.3))}
+.limb .arm{position:absolute;left:0;top:calc(100% - 1px);width:100%;max-width:none}
+.knees{position:absolute;left:50%;width:min(100%,520px);z-index:1;pointer-events:none;filter:drop-shadow(0 -3px 8px rgba(30,18,6,.35))}
+.knees img{width:100%;display:block}
+.kb{bottom:0;transform:translate(-50%,40%)}
+.kt{top:0;transform:translate(-50%,-40%) rotate(180deg)}
+.hand:has(img) .num{width:36px;height:36px;font-size:1.2rem;border-width:2.5px}
+.top .hand svg,.top .hand .limb{transform:rotate(180deg)}
+.top .hand{flex-direction:column-reverse}
+.hand .side{position:relative;z-index:1;font-size:.68rem;font-weight:400;color:var(--muted);background:var(--washi);padding:0 7px;border-radius:999px}
+.hand .num{position:absolute;left:50%;transform:translateX(-50%);top:57%;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:var(--card);font-family:var(--font-display);font-size:1.4rem;line-height:1;border:3px solid currentColor;font-variant-numeric:tabular-nums}
+.top .hand .num{top:auto;bottom:57%}
+.c0 .hand{color:var(--blue);--tint:var(--blue-tint)} .c1 .hand{color:var(--red);--tint:var(--red-tint)}
+.hand .f{fill:var(--tint);stroke:currentColor;stroke-width:4;stroke-linejoin:round}
+.hand .nail{fill:none;stroke:currentColor;stroke-width:2;opacity:.45}
+.hand.dead svg{opacity:.25}
+.hand.dead .limb{opacity:.55;filter:grayscale(.75) drop-shadow(0 4px 6px rgba(30,18,6,.25));translate:0 36%}
+.top .hand.dead .limb{translate:0 -36%}
+.hand.dead .f{stroke-dasharray:6 6;fill:none}
+.hand.dead .num{border-style:dashed;color:var(--muted)}
+.hand.sel::before{content:"";position:absolute;inset:4% -2% 10%;background:var(--hl);border-radius:44% 52% 40% 56%/50% 44% 56% 50%;z-index:-1;transform:rotate(-4deg)}
+.bottom .hand.sel{transform:translateY(-6px)} .top .hand.sel{transform:translateY(6px)}
+.hand.tgt::after{content:"";position:absolute;inset:2% -4% 8%;border:3px dashed currentColor;border-radius:46%;z-index:-1;animation:spin 6s linear infinite}
+.hand.tgt svg,.hand.tgt .limb{animation:bob 1.1s ease-in-out infinite}
+.top .hand.tgt svg,.top .hand.tgt .limb{animation-name:bobd}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes bob{50%{translate:0 -3px}}
+@keyframes bobd{50%{translate:0 3px}}
+.float{position:absolute;left:50%;top:30%;transform:translateX(-50%);font-family:var(--font-display);font-size:1.3rem;white-space:nowrap;pointer-events:none;color:var(--ink);text-shadow:0 0 6px var(--paper),0 0 2px var(--paper);animation:floatUp 1s ease-out forwards;z-index:3}
+@keyframes floatUp{from{opacity:0;translate:0 10px}20%{opacity:1}to{opacity:0;translate:0 -34px}}
+
+.mid{position:relative;z-index:4;display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 12px;margin-inline:clamp(14px,5vw,30px);background:var(--washi-mid);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);border-radius:16px;box-shadow:0 2px 8px rgba(30,20,8,.2);text-align:center}
+#turn{font-family:var(--font-display);font-size:1.2rem;line-height:1.2;text-wrap:balance}
+#turn:empty{display:none}
+.mid>*{flex-shrink:0}
+.mid.hinting #hintBtn{margin-top:6px}
+.mid.hinting #actions{gap:4px;padding-bottom:6px}
+#turn mark{background:linear-gradient(transparent 55%,var(--hl) 55%);color:inherit;padding:0 2px}
+#last{font-size:.82rem;color:var(--muted);min-height:1.3em;max-width:46ch;line-height:1.5}
+#last b{color:var(--ink)}
+#last .tag{font-weight:400}
+#actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;min-height:32px}
+.hint{font-size:.8rem;color:var(--muted);max-width:42ch;line-height:1.5}
+.hint b{color:var(--ink)}
+.brk{flex-basis:100%;height:0}
+.chip{border:2px solid var(--blue);background:var(--card);color:var(--blue);border-radius:12px;padding:5px 12px;font-weight:400;cursor:pointer;font-variant-numeric:tabular-nums}
+.chip.red{border-color:var(--red);color:var(--red)}
+.chip small{font-weight:400;font-size:.7rem;color:var(--muted);margin-inline:2px}
+
+.overlay{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;background:rgba(10,18,26,.45);padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));overflow-y:auto}
+.sheet{margin:auto;width:min(440px,100%);background:var(--card);border:3px solid var(--ink);border-radius:20px;padding:20px 18px;box-shadow:6px 6px 0 var(--ink);display:grid;gap:14px}
+.sheet h2{font-family:var(--font-display);font-weight:400;font-size:1.5rem;margin:0;text-wrap:balance}
+.sheet h3{font-family:var(--font-display);font-weight:400;font-size:1.1rem;margin:0}
+.sheet p{margin:0;line-height:1.7}
+.lbl{font-size:.75rem;font-weight:400;letter-spacing:.12em;color:var(--muted);margin-bottom:6px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg label{flex:1;min-width:84px;cursor:pointer}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg span{display:block;text-align:center;border:2px solid var(--ink);border-radius:12px;padding:8px 6px;font-weight:400}
+.seg span small{display:block;font-weight:400;font-size:.7rem;color:var(--muted);margin-top:2px}
+.seg input:checked+span{background:var(--ink);color:var(--card)}
+.seg input:checked+span small{color:var(--card);opacity:.75}
+.seg input:focus-visible+span{outline:3px solid var(--blue);outline-offset:2px}
+.chk{display:flex;gap:10px;align-items:flex-start;padding:5px 0;cursor:pointer;line-height:1.5}
+.chk input{width:20px;height:20px;margin-top:2px;accent-color:var(--blue);flex-shrink:0}
+.chk small{display:block;color:var(--muted);font-size:.78rem}
+.chk.sub{padding-left:30px}
+.primary{background:var(--ink);color:var(--card);border:0;border-radius:14px;padding:13px;font-weight:400;font-size:1.05rem;cursor:pointer}
+.about p{margin:0;line-height:1.7}.about .credits{margin:0;padding-left:1.2em;line-height:1.7;font-size:.9rem}
+.tipbtn{display:block;text-align:center;text-decoration:none;margin-top:8px}
+.ghost{background:none;border:2px solid var(--ink);border-radius:14px;padding:11px;font-weight:400;cursor:pointer}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1}
+.jk{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.jk button{background:var(--blue-tint);border:2px solid var(--blue);border-radius:16px;padding:8px 4px 6px;cursor:pointer;color:var(--blue);display:grid;justify-items:center;gap:2px;font-weight:400}
+.jk svg{width:66px;height:auto}
+.jk img{width:56px}
+.jk .f{fill:var(--card);stroke:currentColor;stroke-width:4;stroke-linejoin:round}
+.jk .nail,.vs .nail{fill:none;stroke:currentColor;stroke-width:2;opacity:.45}
+.vs{display:flex;justify-content:center;align-items:center;gap:14px;font-family:var(--font-display)}
+.vs div{display:grid;justify-items:center;font-family:var(--font-body);font-weight:400;font-size:.8rem;gap:2px}
+.vs svg{width:70px;height:auto}
+.vs img{width:60px}
+.vs .me{color:var(--blue);--tint:var(--blue-tint)} .vs .cpu{color:var(--red);--tint:var(--red-tint)}
+.vs .cpu svg{transform:scaleX(-1)}
+.vs .f{fill:var(--tint);stroke:currentColor;stroke-width:4;stroke-linejoin:round}
+.jkmsg{text-align:center;font-weight:400;font-size:1.1rem}
+.rules{margin:0;padding-left:1.3em;display:grid;gap:8px;line-height:1.65}
+.rules li::marker{font-family:var(--font-display);color:var(--blue)}
+.ex{font-variant-numeric:tabular-nums;background:var(--blue-tint);border-radius:6px;padding:0 6px;white-space:nowrap}
+.clist{display:grid;gap:10px}
+.clist div{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;line-height:1.55;font-size:.9rem}
+.clist .card{cursor:default}
+.clist b{display:block}
+.note{font-size:.8rem;color:var(--muted);border-top:2px dashed var(--grid-strong);padding-top:10px;line-height:1.6}
+.big{font-family:var(--font-display);font-size:2.1rem;text-align:center;margin:0}
+.big.win{color:var(--blue)} .big.lose{color:var(--red)}
+.center{text-align:center;color:var(--muted)}
+.titlebox{margin:auto;width:min(420px,100%);display:grid;gap:clamp(14px,3vh,26px);justify-items:center;text-align:center;padding-block:8px}
+.tart{position:relative;width:min(240px,62vw);aspect-ratio:1.3186}
+.th{position:absolute;left:50%;width:32%;translate:-50% 0}
+.th svg{width:100%;height:auto;display:block}
+.th img{width:100%}
+.th-top{top:0;color:var(--red);--tint:var(--red-tint);rotate:180deg;animation:poke-d 2.4s ease-in-out infinite}
+.th-bot{bottom:0;color:var(--blue);--tint:var(--blue-tint);animation:poke-u 2.4s ease-in-out infinite}
+.th .f{fill:var(--tint);stroke:currentColor;stroke-width:4;stroke-linejoin:round}
+.th .nail{fill:none;stroke:currentColor;stroke-width:2;opacity:.45}
+@keyframes poke-u{0%,100%{transform:translateY(6px)}50%{transform:translateY(0)}}
+@keyframes poke-d{0%,100%{transform:translateY(6px)}50%{transform:translateY(0)}}
+.tname{display:grid;gap:4px;justify-items:center;background:var(--card);padding:14px clamp(18px,6vw,34px) 16px;border-block:9px solid var(--wood);border-radius:5px;box-shadow:0 6px 16px rgba(30,18,6,.3);position:relative}
+.tname::before,.tname::after{content:"";position:absolute;left:-10px;right:-10px;height:9px;background:var(--wood);border-radius:5px}
+.tname::before{top:-9px}.tname::after{bottom:-9px}
+.kana{font-size:.8rem;font-weight:400;letter-spacing:.5em;color:var(--muted);padding-left:.5em}
+.tlogo{font-family:var(--font-display);font-weight:400;font-size:clamp(3rem,16vw,5rem);white-space:nowrap;line-height:1;margin:0;letter-spacing:.04em;background:linear-gradient(transparent 62%,var(--hl) 62%,var(--hl) 88%,transparent 88%);padding:0 .1em}
+.tcatch{margin:8px 0 0;font-family:var(--font-display);font-size:clamp(1.1rem,5.4vw,1.45rem);letter-spacing:.08em;white-space:nowrap}
+.tsub{margin:6px 0 0;font-size:.9rem;color:var(--muted);text-wrap:balance}
+.tbtns{display:grid;gap:12px;width:100%}
+.tbig{display:grid;gap:3px;justify-items:center;border:3px solid var(--ink);border-radius:18px;padding:14px 12px;cursor:pointer;color:#fff;box-shadow:5px 5px 0 var(--ink);transition:transform .12s,box-shadow .12s}
+.tbig span{font-family:var(--font-display);font-size:1.45rem;line-height:1.2}
+.tbig small{font-size:.76rem;font-weight:400;opacity:.92}
+.tbig.b{background:var(--blue)} .tbig.r{background:var(--red)}
+.tbig:hover{transform:translate(-1px,-1px);box-shadow:6px 6px 0 var(--ink)}
+.tbig:active{transform:translate(3px,3px);box-shadow:2px 2px 0 var(--ink)}
+.tlinks{display:flex;gap:8px 10px;justify-content:center;flex-wrap:wrap}
+.vol{display:grid;grid-template-columns:4.5em 1fr 2.5em;align-items:center;gap:10px;font-weight:400}
+.vol input{width:100%;accent-color:var(--blue)}
+.vol output{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.tlink{background:var(--washi)!important;border-radius:999px;padding:6px 14px!important;color:var(--ink)!important;background:none;border:0;font-weight:400;color:var(--muted);text-decoration:underline;text-underline-offset:4px;cursor:pointer;padding:6px;justify-self:center}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tbig{color:#0f161c}}
+:root[data-theme="dark"] .tbig{color:#0f161c}
+.pv{position:absolute;left:50%;transform:translateX(-50%);top:30%;z-index:4;background:var(--ink);color:var(--card);font-weight:400;font-size:.78rem;border-radius:999px;padding:3px 9px;white-space:nowrap;pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.top .pv{top:auto;bottom:30%}
+.pv.hot{background:var(--red);color:#fff}
+.pv.dim{background:var(--muted)}
+.pv.warn{background:var(--hl);color:#1b2632}
+.hand.hintf .limb,.hand.hintt .limb{filter:drop-shadow(0 0 6px var(--hl)) drop-shadow(0 0 12px var(--hl))}
+.card{position:relative}
+.card.hintc,.chip.hintc{outline:3px solid var(--hl);outline-offset:2px;animation:hintpulse 1.2s ease-in-out infinite}
+@keyframes hintpulse{50%{outline-offset:5px}}
+.card.got::after{content:"受取";position:absolute;top:-9px;right:-7px;background:var(--hl);color:#1b2632;font-size:.56rem;font-weight:400;padding:1px 5px;border-radius:6px;border:1.5px solid var(--ink)}
+.chip.warnchip{border-color:var(--hl)}
+.ghostchip{border-color:var(--ink);color:var(--ink)}
+.hintline{display:inline-block;font-size:.78rem;background:var(--card);border:2px solid var(--hl);border-radius:10px;padding:3px 9px;color:var(--ink);line-height:1.45}
+.hintline b{color:inherit}
+.hintbox{background:var(--card);border:2px solid var(--hl);border-radius:12px;padding:6px 10px;color:var(--ink)}
+.hint.warn{color:var(--ink);background:var(--hl);border-radius:10px;padding:3px 10px;font-weight:400}
+.tlist{display:grid;gap:8px}
+.topt{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;text-align:left;border:2px solid var(--grid-strong);border-radius:14px;padding:8px 10px;background:var(--card);cursor:pointer;line-height:1.5;font-size:.88rem}
+.topt b{display:block}
+.topt.on{border-color:var(--ink);background:var(--hl);box-shadow:3px 3px 0 var(--ink)}
+.topt .card,.tpair .card{cursor:default}
+.tsum{display:grid;gap:8px;border-top:2px dashed var(--grid-strong);padding-top:10px}
+.tpair{display:grid;grid-template-columns:5.5em auto 1fr;gap:10px;align-items:center;font-size:.85rem;line-height:1.5}
+.tpair>span:first-child{font-weight:400;color:var(--muted)}
+.tpair b{display:block}
+.dots{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.dot{width:12px;height:12px;border-radius:50%;display:inline-block;flex-shrink:0}
+.dot.g{background:var(--good)} .dot.n{background:var(--muted);opacity:.55} .dot.b{background:var(--red)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.75rem;color:var(--muted);margin-top:6px}
+.legend span{display:flex;align-items:center;gap:5px}
+.rvlist{margin:0;padding-left:1.2em;display:grid;gap:10px;font-size:.88rem;line-height:1.55}
+.rvhead{font-weight:400}
+.rvkind{color:var(--red);font-weight:400}
+.rvbest{color:var(--muted)} .rvbest b{color:var(--ink)}
+.rvboard{font-size:.9em;background:var(--grid);border-radius:6px;padding:4px 10px;margin:4px 0}
+.rvboard .lbl{font-size:.8em;color:var(--muted);margin-bottom:0}
+.nw{white-space:nowrap}
+.rvok{list-style:none;margin-left:-1.2em;font-weight:400;color:var(--good)}
+.table{position:absolute;left:-6px;right:-6px;top:15%;bottom:15%;z-index:0;border-radius:18px;pointer-events:none;
+  background:var(--table-tex,none) center/cover,#8c5530;
+  box-shadow:0 16px 30px rgba(30,16,4,.5),0 4px 8px rgba(30,16,4,.35),inset 0 0 0 2px rgba(50,22,6,.6),inset 0 2px 0 5px rgba(255,220,170,.1),inset 0 -6px 12px rgba(30,12,2,.35)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .table{filter:brightness(.72)}}
+:root[data-theme="dark"] .table{filter:brightness(.72)}
+.cup{position:absolute;width:clamp(54px,17vw,76px);aspect-ratio:1;filter:drop-shadow(4px 7px 5px rgba(30,14,2,.5))}
+.cup img{width:100%;display:block}
+.cup-b{left:10px;bottom:10px}
+.cup-t{right:10px;top:10px}
+/* small screens: the status badges keep only their key word so they fit beside the name */
+@media (max-width:400px) and (max-height:700px){.badge .lg{display:none}}
+@media (max-height:700px){
+  header.top{margin-top:4px;padding-block:4px}
+  .board{gap:2px;padding-block:2px 6px}
+  .zone{gap:4px;padding-block:3px}
+  .mid{gap:3px;padding:5px 10px}
+  #turn{font-size:1.02rem}
+  #last{font-size:.74rem;line-height:1.35}
+  .hint{font-size:.74rem;line-height:1.35}
+  #actions{gap:5px;min-height:26px}
+  .chip{padding:3px 10px}
+  .hand{width:clamp(66px,min(28vw,12.5vh),118px)}
+  .hand{width:clamp(56px,min(28vw,12.5vh,calc(100cqh / 1.7)),118px)}
+  .card{width:42px;height:54px}
+  .card .g{font-size:1rem}
+  .card .n{font-size:.55rem}
+}
+@media (max-height:680px){.hand .num{width:34px;height:34px;font-size:1.1rem}.card{width:44px;height:56px}.card .g{font-size:1.05rem}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* very short screens (e.g. 320×568): smaller cards and a tighter middle panel so both players' hands stay clear */
+@media (max-height:600px){
+  .card{width:38px;height:48px;padding:2px 1px 3px}
+  .card .g{font-size:.9rem}
+  .card .n{font-size:.5rem}
+  .cards{gap:3px}
+  .mid{padding:4px 8px}
+  #last,.hint{font-size:.7rem}
+  .bar{gap:3px 8px}
+}
+</style>
+
+<div class="app">
+  <div class="knees kt" id="kneesT" hidden></div>
+  <div class="knees kb" id="kneesB" hidden></div>
+  <header class="top">
+    <div class="brand"><h1>一本勝負</h1><span id="modeLabel">CPU対戦・ふつう</span></div>
+    <div class="tools">
+      <button class="tbtn" id="btnUndo" type="button">待った</button>
+      <button class="tbtn" id="btnRules" type="button">ルール</button>
+      <button class="tbtn" id="btnSetup" type="button">設定</button>
+    </div>
+  </header>
+  <main class="board">
+    <div class="table" aria-hidden="true"><div class="cup cup-t" id="cupT" hidden></div><div class="cup cup-b" id="cupB" hidden></div></div>
+    <section class="zone top c1" id="zone1"></section>
+    <section class="mid">
+      <div id="turn">じゃんけんで先攻を決めよう</div>
+      <div id="last"></div>
+      <div id="actions"></div>
+    </section>
+    <section class="zone bottom c0" id="zone0"></section>
+  </main>
+</div>
+
+<div class="overlay solid" id="ovTitle">
+  <div class="titlebox">
+    <div class="tart" id="titleArt" aria-hidden="true"></div>
+    <div class="tname">
+      <span class="kana">いっぽんしょうぶ</span>
+      <h1 class="tlogo">一本勝負</h1>
+      <p class="tcatch">～五本で散る頭脳戦～</p>
+      <p class="tsub"><span class="nw">両手1本ずつから。</span><span class="nw">先に相手の両手を消したら勝ち。</span></p>
+    </div>
+    <div class="tbtns">
+      <button type="button" class="tbig b" id="titleCpu"><span>CPUと対戦</span><small>強さは3段階。「つよい」は全局面を読み切り</small></button>
+      <button type="button" class="tbig r" id="titlePvp"><span>ふたりで対戦</span><small>1台の端末を交互に渡して</small></button>
+      <div class="tlinks"><button type="button" class="tlink" id="titleRules">ルール</button><button type="button" class="tlink" id="titleSound">BGM・効果音</button><button type="button" class="tlink" id="titleAbout">このゲームについて</button></div>
+    </div>
+  </div>
+</div>
+<div class="overlay" id="ovSetup" hidden>
+  <form class="sheet" id="setupForm">
+    <h2 id="setupTitle">CPUと対戦</h2>
+    <p id="setupLead">CPUの強さとルールを選んでください。</p>
+    <div id="levelBox">
+      <div class="lbl">CPUの強さ</div>
+      <div class="seg">
+        <label><input type="radio" name="level" id="lvWeak" value="weak"><span>よわい<small>てきとうに打つ</small></span></label>
+        <label><input type="radio" name="level" id="lvNormal" value="normal" checked><span>ふつう<small>1手先を読む</small></span></label>
+        <label><input type="radio" name="level" id="lvStrong" value="strong"><span>つよい<small>全局面を読み切り</small></span></label>
+      </div>
+    </div>
+    <div>
+      <div class="lbl">採用ルール</div>
+      <label class="chk"><input type="checkbox" id="ruleSplit" checked><span>① 分身（分け与え）<small>片手が消えたら指を分け直せる。2・2だけでなく3・1もOK。左右を入れ替えるだけは禁止。</small></span></label>
+      <label class="chk"><input type="checkbox" id="ruleSelf" checked><span>② 自分の手を攻撃<small>自分の手で、自分のもう片方の手にタッチできる。</small></span></label>
+      <label class="chk"><input type="checkbox" id="ruleCards" checked><span>③ 技カード<small>8種類15枚の山札（連撃だけ1枚、ほかは2枚ずつ）から、5枚ずつ配る。1枚につき1回使えて、使うとなくなる。</small></span></label>
+      <label class="chk" id="passBox" hidden><input type="checkbox" id="rulePass" checked><span>端末を交互に渡して遊ぶ<small>相手のカードは伏せて表示。手番が終わるたびに受け渡し画面が出て、受け取った人の手が下側に来ます。</small></span></label>
+      <label class="chk sub" id="hideBox"><input type="checkbox" id="ruleHide" checked><span>CPUの手札を伏せる<small>使われるまでCPUのカードが見えない（「透視」を使うと一時的に見える）。</small></span></label>
+    </div>
+    <button type="button" class="ghost" id="setupSound">BGM・効果音の音量</button>
+    <div class="row">
+      <button type="button" class="ghost" id="setupBack">タイトルへ</button>
+      <button type="button" class="ghost" id="setupClose" hidden>閉じる</button>
+      <button type="submit" class="primary" id="setupGo">じゃんけんへ</button>
+    </div>
+  </form>
+</div>
+
+<div class="overlay solid" id="ovHand" hidden><div class="sheet" id="handBody"></div></div>
+<div class="overlay solid" id="ovTrade" hidden><div class="sheet" id="tradeBody"></div></div>
+<div class="overlay" id="ovJanken" hidden><div class="sheet" id="jankenBody"></div></div>
+<div class="overlay" id="ovResult" hidden><div class="sheet" id="resultBody"></div></div>
+
+<div class="overlay" id="ovRules" hidden>
+  <div class="sheet">
+    <h2>ルール</h2>
+    <ol class="rules">
+      <li>両手とも指1本ずつでスタート。じゃんけんで先攻・後攻を決める。</li>
+      <li>自分の手で相手の手にタッチすると、自分の指の本数ぶん相手の指が増える。<span class="ex">2 → 1 は 3</span></li>
+      <li>ちょうど5本になった手は消える。5を超えたら、超えた分だけ指が残る。<span class="ex">3 + 3 = 6 → 1</span></li>
+      <li>先に相手の両手を消したら勝ち。</li>
+      <li>採用ルール①：片手が消えているとき、指を分け与えて復活できる。<span class="ex">4・0 → 2・2 / 3・1</span> ただ左右を入れ替えるだけは禁止。</li>
+      <li>採用ルール②：自分の手で、自分のもう片方の手を攻撃できる。</li>
+      <li>採用ルール③：技カード。8種類15枚（連撃だけ1枚、ほかは2枚ずつ）をシャッフルし、5枚ずつ配る。1手番に使えるのは1枚まで。使ったカードはなくなる。「見切り」だけは自分から使えず、相手が強打・弱体・盾・連撃・入れ替えを使ったときに自動で発動する（透視・攪乱には反応しない）。</li>
+    </ol>
+    <h3>技カード</h3>
+    <div class="clist" id="cardList"></div>
+    <p class="note">遊び方：自分の手をタップして選び、攻撃したい手をタップ。カードは先にカードをタップしてから行動します。分身は画面中央のボタンから。<br>このアプリでは、同じ局面が3回出たら引き分けにしています（試合が終わらなくなるのを防ぐため）。2回目の局面では予告が出て、引き分けになる手には印が付きます。対戦中の「ヒント」で形勢とおすすめの一手が、対局後の「振り返り」で形勢の推移と悪手が見られます。</p>
+    <button type="button" class="primary" id="rulesClose">閉じる</button>
+  </div>
+</div>
+
+<div class="overlay" id="ovReview" hidden><div class="sheet" id="reviewBody"></div></div>
+<div class="overlay" id="ovAbout" hidden>
+  <div class="sheet about">
+    <h2>このゲームについて</h2>
+    <p><b>一本勝負</b> ～五本で散る頭脳戦～<br><small id="aboutVer"></small></p>
+    <p>指の本数を足して相手の手を消す昔ながらの手遊びに、技カードの駆け引きを加えた対戦ゲームです。CPUと戦うことも、1台の端末をふたりで渡し合って遊ぶこともできます。</p>
+    <div><div class="lbl">作者</div><p>小筆舎（こふでしゃ）</p></div>
+    <div id="tipBox" hidden><div class="lbl">応援する</div><p>楽しんでいただけたら、応援してもらえると次の作品の励みになります。</p><a class="primary tipbtn" id="tipLink" href="#" target="_blank" rel="noopener">OFUSEで応援する</a></div>
+    <div><div class="lbl">クレジット</div>
+      <ul class="credits">
+        <li>フォント：Yuji Syuku（The Yuji Project Authors／Kinuta Font Factory）<br><small>SIL Open Font License 1.1</small></li>
+        <li>BGM・効果音・3Dの手・畳や机の模様は、すべてプログラムで生成しています。</li>
+        <li>開発にはAIアシスタント（Claude）を使用しています。</li>
+      </ul></div>
+    <div><div class="lbl">データの扱い</div><p class="note2">このゲームは個人情報を集めません。音量の設定だけを、この端末のブラウザに保存します。</p></div>
+    <button type="button" class="primary" id="aboutClose">閉じる</button>
+  </div>
+</div>
+<div class="overlay" id="ovSound" hidden>
+  <div class="sheet">
+    <h2>BGM・効果音</h2>
+    <div class="vol"><label for="volBgm">BGM</label><input type="range" id="volBgm" min="0" max="100" step="5"><output id="volBgmOut" for="volBgm">60</output></div>
+    <div class="vol"><label for="volSe">効果音</label><input type="range" id="volSe" min="0" max="100" step="5"><output id="volSeOut" for="volSe">80</output></div>
+    <button type="button" class="ghost" id="seTest">効果音を試す</button>
+    <p class="note2">0にすると消音になります。音は画面を一度タップしたあとに鳴り始めます。端末が消音モードだと聞こえないことがあります。</p>
+    <button type="button" class="primary" id="soundClose">閉じる</button>
+  </div>
+</div>
+
+<script>
+// Shared rules engine: used by the page, by the solver Worker, and by tests.
+function buildLib(){
+  // card types: 0 強打 1 弱体 2 盾 3 連撃 4 入れ替え 5 見切り | 6 透視 7 攪乱
+  // Types 0-5 are part of the searched state. 透視 and 攪乱 change only what players see / which cards they hold
+  // (攪乱 is random), so the exact search leaves them out and they are handled by the page.
+  const T=6,NC=8,MIKIRI=5,PEEK=6,SHUF=7;
+  const P3=[1,3,9,27,81,243],PN=729;
+  const dead=a=>a[0]===0&&a[1]===0;
+  const clone=h=>[h[0].slice(),h[1].slice()];
+  const cnt2code=c=>{let k=0;for(let t=0;t<T;t++)k+=c[t]*P3[t];return k};
+  const code2cnt=k=>{const c=[];for(let t=0;t<T;t++){const d=k%3;c.push(d);k=(k-d)/3}c.push(0,0);return c};
+  const list2cnt=l=>{const c=new Array(NC).fill(0);for(const t of l)c[t]++;return c};
+  function enc(h,p,fx,c0,c1){
+    const hc=((h[0][0]*5+h[0][1])*5+h[1][0])*5+h[1][1];
+    return (((hc*2+p)*3+fx)*PN+c0)*PN+c1;
+  }
+  function dec(k){
+    const c1=k%PN;k=(k-c1)/PN;const c0=k%PN;k=(k-c0)/PN;const fx=k%3;k=(k-fx)/3;const p=k%2;let hc=(k-p)/2;
+    const d=hc%5;hc=(hc-d)/5;const c=hc%5;hc=(hc-c)/5;const b=hc%5;const a=(hc-b)/5;
+    return {h:[[a,b],[c,d]],p,fx,c0,c1};
+  }
+  // fx applies to the mover: 1 = 弱体 (attacks −1), 2 = 相手の盾 (attacks on opponent do nothing)
+  function power(h,p,a,fx){return Math.max(0,h[p][a.from]+(a.bonus||0)-(fx===1?1:0))}
+  function applyAct(h,p,a,fx){
+    const n=clone(h),me=n[p],op=n[1-p];
+    if(a.t==='atk'){if(fx!==2)op[a.to]=(op[a.to]+power(h,p,a,fx))%5}
+    else if(a.t==='self'){me[a.to]=(me[a.to]+power(h,p,a,fx))%5}
+    else if(a.t==='split'){n[p]=a.v.slice()}
+    else if(a.t==='swap'){const t=me[a.from];me[a.from]=op[a.to];op[a.to]=t}
+    // 'pass' (a card that was cancelled outright) changes nothing
+    return n;
+  }
+  function baseActs(h,p,r){
+    const me=h[p],op=h[1-p],out=[];
+    for(let i=0;i<2;i++)if(me[i])for(let j=0;j<2;j++)if(op[j])out.push({t:'atk',from:i,to:j});
+    if(r.self)for(let i=0;i<2;i++)if(me[i]&&me[1-i])out.push({t:'self',from:i,to:1-i});
+    if(r.split&&((me[0]===0)!==(me[1]===0))){const t=me[0]+me[1];for(let a=1;a<t;a++)out.push({t:'split',v:[a,t-a]})}
+    return out;
+  }
+  function cardActs(h,p,card){
+    const me=h[p],op=h[1-p],out=[];
+    if(card===0)for(let i=0;i<2;i++)if(me[i])for(let j=0;j<2;j++)if(op[j])out.push({t:'atk',from:i,to:j,bonus:1});
+    if(card===4)for(let i=0;i<2;i++)if(me[i])for(let j=0;j<2;j++)if(op[j]&&op[j]!==me[i])out.push({t:'swap',from:i,to:j});
+    return out;
+  }
+  // the same action with its card effect removed (what 見切り leaves of it)
+  const plain=a=>a.t==='swap'?{t:'pass'}:a.bonus?{t:a.t,from:a.from,to:a.to}:a;
+  // every legal turn: {card:-1|type, acts:[...], res, nfx, oc}
+  //  oc = the opponent's 見切り that fires (or -1); cancel = the card's effect was cancelled
+  //  見切り reacts only to the five action cards (強打・弱体・盾・連撃・入れ替え), never to 透視 / 攪乱
+  //  extras: also offer 透視 / 攪乱 (the page does this; the exact search does not)
+  const reacts=t=>t>=0&&t<MIKIRI;
+  function genAll(h,p,fx,cnt,r,ocnt,extras){
+    const out=[],mk=!!(ocnt&&ocnt[MIKIRI]>0);
+    const push=(card,acts,res,nfx)=>{const c=mk&&reacts(card);out.push({card,acts,res,nfx:nfx||0,oc:c?MIKIRI:-1,cancel:c})};
+    const base=baseActs(h,p,r);
+    for(const a of base)push(-1,[a],applyAct(h,p,a,fx));
+    const kinds=extras?[0,1,2,3,4,PEEK,SHUF]:[0,1,2,3,4];
+    for(const t of kinds){
+      if(!cnt[t])continue;
+      if(mk&&reacts(t)){ // the opponent's 見切り cancels the card: the turn becomes a plain action (入れ替え fizzles)
+        if(t===0)for(const a of base.filter(a=>a.t==='atk'))push(0,[a],applyAct(h,p,a,fx));
+        else if(t===4){if(cardActs(h,p,4).length)push(4,[{t:'pass'}],clone(h))}
+        else for(const a of base)push(t,[a],applyAct(h,p,a,fx));
+        continue;
+      }
+      if(t===0||t===4)for(const a of cardActs(h,p,t))push(t,[a],applyAct(h,p,a,fx));
+      if(t===1||t===2)for(const a of base)push(t,[a],applyAct(h,p,a,fx),t);
+      if(t===PEEK||t===SHUF)for(const a of base)push(t,[a],applyAct(h,p,a,fx));
+      if(t===3)for(const a1 of base){
+        const h1=applyAct(h,p,a1,fx);push(3,[a1],h1);
+        if(!dead(h1[1-p]))for(const a2 of baseActs(h1,p,r))push(3,[a1,a2],applyAct(h1,p,a2,fx));
+      }
+    }
+    return out;
+  }
+  function childKey(m,p,c0,c1){
+    if(m.card>=0&&m.card<T){if(p===0)c0-=P3[m.card];else c1-=P3[m.card]}
+    if(m.oc>=0){if(p===0)c1-=P3[m.oc];else c0-=P3[m.oc]}
+    return enc(m.res,1-p,m.nfx,c0,c1);
+  }
+  // retrograde analysis of everything reachable from rootKey
+  function solveFrom(rootKey,r){
+    const idx=new Map(),keys=[],succ=[],off=[0];
+    const add=k=>{let i=idx.get(k);if(i===undefined){i=keys.length;idx.set(k,i);keys.push(k)}return i};
+    add(rootKey);
+    const term=[];
+    for(let i=0;i<keys.length;i++){
+      const s=dec(keys[i]);
+      if(dead(s.h[s.p])){term.push(i);off.push(succ.length);continue}
+      if(dead(s.h[1-s.p])){off.push(succ.length);continue}
+      const set=new Set();
+      const mine=code2cnt(s.p===0?s.c0:s.c1),theirs=code2cnt(s.p===0?s.c1:s.c0);
+      for(const m of genAll(s.h,s.p,s.fx,mine,r,theirs,false))set.add(childKey(m,s.p,s.c0,s.c1));
+      for(const k of set)succ.push(add(k));
+      off.push(succ.length);
+    }
+    const n=keys.length,E=succ.length;
+    const pOff=new Int32Array(n+1),pred=new Int32Array(E),fill=new Int32Array(n);
+    for(let e=0;e<E;e++)pOff[succ[e]+1]++;
+    for(let i=0;i<n;i++)pOff[i+1]+=pOff[i];
+    for(let i=0;i<n;i++)for(let e=off[i];e<off[i+1];e++){const t=succ[e];pred[pOff[t]+fill[t]++]=i}
+    const left=new Int32Array(n);for(let i=0;i<n;i++)left[i]=off[i+1]-off[i];
+    const val=new Int8Array(n),dep=new Int16Array(n),q=new Int32Array(n);let qh=0,qt=0;
+    for(const i of term){val[i]=-1;q[qt++]=i}
+    while(qh<qt){
+      const s=q[qh++];
+      for(let e=pOff[s];e<pOff[s+1];e++){
+        const u=pred[e];if(val[u])continue;
+        if(val[s]===-1){val[u]=1;dep[u]=dep[s]+1;q[qt++]=u}
+        else if(--left[u]===0){val[u]=-1;dep[u]=dep[s]+1;q[qt++]=u}
+      }
+    }
+    return {keys:Float64Array.from(keys),val,dep};
+  }
+  return {T,NC,MIKIRI,PEEK,SHUF,reacts,P3,dead,clone,cnt2code,code2cnt,list2cnt,enc,dec,power,applyAct,baseActs,cardActs,plain,genAll,childKey,solveFrom};
+}
+
+
+/* ---------- sound: everything is synthesized with Web Audio (no audio files) ---------- */
+const SND=(()=>{
+  const VOL_KEY='yubiVol';
+  const A={ctx:null,bgm:null,se:null,noise:null,cur:null,want:null,timer:null,vol:{bgm:60,se:80}};
+  try{const v=JSON.parse(localStorage.getItem(VOL_KEY)||'null');if(v&&typeof v.bgm==='number'&&typeof v.se==='number')A.vol={bgm:v.bgm,se:v.se}}catch(e){}
+  const mtof=m=>440*Math.pow(2,(m-69)/12);
+  const g2=v=>Math.pow(v/100,2);
+  function applyVol(){
+    if(!A.ctx)return;
+    const t=A.ctx.currentTime;
+    A.bgm.gain.setTargetAtTime(g2(A.vol.bgm)*.32,t,.05);
+    A.se.gain.setTargetAtTime(g2(A.vol.se)*.9,t,.03);
+  }
+  function init(){
+    if(A.ctx){if(A.ctx.state==='suspended'&&!document.hidden)A.ctx.resume().catch(()=>{});return}
+    const C=window.AudioContext||window.webkitAudioContext;if(!C)return;
+    try{A.ctx=new C()}catch(e){return}
+    const ctx=A.ctx,comp=ctx.createDynamicsCompressor();
+    comp.threshold.value=-14;comp.ratio.value=4;comp.connect(ctx.destination);
+    A.bgm=ctx.createGain();A.se=ctx.createGain();A.bgm.gain.value=0;A.se.gain.value=0;
+    A.bgm.connect(comp);A.se.connect(comp);
+    const buf=ctx.createBuffer(1,ctx.sampleRate,ctx.sampleRate),d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+    A.noise=buf;
+    applyVol();
+    A.timer=setInterval(tick,25);
+    if(A.want)play(A.want);
+  }
+  /* --- voices --- */
+  function env(g,t,a,peak,dec,end){g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(peak,t+a);g.gain.exponentialRampToValueAtTime(0.0001,t+a+dec);if(end)g.gain.setValueAtTime(0,t+a+dec+.01)}
+  function osc(type,f,t,dur,out,peak,a,pan){
+    const ctx=A.ctx,o=ctx.createOscillator(),g=ctx.createGain();
+    o.type=type;o.frequency.setValueAtTime(f,t);env(g,t,a||.005,peak,dur);
+    let node=g;
+    if(pan&&ctx.createStereoPanner){const p=ctx.createStereoPanner();p.pan.value=pan;g.connect(p);node=p}
+    o.connect(g);node.connect(out);o.start(t);o.stop(t+(a||.005)+dur+.05);
+    return o;
+  }
+  function noise(t,dur,out,peak,type,freq,q){
+    const ctx=A.ctx,s=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain();
+    s.buffer=A.noise;f.type=type;f.frequency.value=freq;f.Q.value=q||1;
+    env(g,t,.002,peak,dur);s.connect(f);f.connect(g);g.connect(out);
+    s.start(t,Math.random()*.5);s.stop(t+dur+.05);
+  }
+  const marimba=(m,t,out,v)=>{osc('sine',mtof(m),t,.45,out,.5*v);osc('sine',mtof(m)*4,t,.08,out,.12*v)};
+  function bass(m,t,out,v,len){
+    const ctx=A.ctx,o=ctx.createOscillator(),f=ctx.createBiquadFilter(),g=ctx.createGain();
+    o.type='triangle';o.frequency.value=mtof(m);f.type='lowpass';f.frequency.value=700;
+    env(g,t,.008,.55*v,len||.28);o.connect(f);f.connect(g);g.connect(out);o.start(t);o.stop(t+(len||.28)+.1);
+  }
+  function lead(m,t,out,len){
+    const ctx=A.ctx,o=ctx.createOscillator(),f=ctx.createBiquadFilter(),g=ctx.createGain();
+    o.type='square';o.frequency.value=mtof(m);f.type='lowpass';f.frequency.setValueAtTime(2600,t);f.frequency.exponentialRampToValueAtTime(1100,t+len);
+    g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(.16,t+.01);g.gain.setValueAtTime(.12,t+len*.7);g.gain.exponentialRampToValueAtTime(0.0001,t+len);
+    o.connect(f);f.connect(g);g.connect(out);o.start(t);o.stop(t+len+.05);
+  }
+  function kick(t,out,v){
+    const ctx=A.ctx,o=ctx.createOscillator(),g=ctx.createGain();
+    o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(42,t+.12);
+    env(g,t,.002,.9*v,.18);o.connect(g);g.connect(out);o.start(t);o.stop(t+.25);
+  }
+  const snare=(t,out,v)=>{noise(t,.14,out,.45*v,'bandpass',1900,.8);osc('triangle',190,t,.08,out,.25*v)};
+  const hat=(t,out,v)=>noise(t,.035,out,.18*v,'highpass',7500);
+
+  /* --- music: 16th-note step sequencers --- */
+  const TITLE_MEL=[[72,0,76,0,79,76,74,0],[72,0,0,74,76,0,0,0],[76,0,79,0,81,79,76,0],[74,0,72,0,74,0,0,0],
+                   [69,72,76,0,74,72,69,0],[72,0,0,0,69,0,72,0],[74,0,79,0,76,0,74,0],[71,0,74,0,79,0,0,0]];
+  const TITLE_CH=[[48,60,64,67],[48,60,64,67],[45,57,60,64],[45,57,60,64],[41,57,60,65],[41,57,60,65],[43,55,59,62],[43,55,59,62]];
+  const BATTLE_MEL=[[69,0,72,69,76,0,74,72],[72,0,69,0,65,0,69,72],[74,0,71,74,79,0,77,76],[76,0,71,0,68,0,71,0],
+                    [69,72,76,72,81,0,79,76],[77,0,76,0,72,0,69,0],[74,76,79,0,77,76,74,0],[76,0,0,0,80,0,83,0]];
+  const BATTLE_CH=[[45,57,60,64],[41,53,57,60],[43,55,59,62],[40,52,56,59],[45,57,60,64],[41,53,57,60],[43,55,59,62],[40,52,56,59]];
+  const TRACKS={
+    title:{bpm:104,bars:8,step(s,t,out,dt){
+      const bar=Math.floor(s/16),k=s%16,ch=TITLE_CH[bar];
+      if(k%2===0){const m=TITLE_MEL[bar][k/2];if(m)marimba(m,t,out,1)}
+      if(k%4===2)marimba(ch[1+((k/4|0)%3)]-12+12,t,out,.35);
+      if(k===0||k===6||k===10)bass(ch[0],t,out,1,.3);
+      if(k%4===0)noise(t,.05,out,.06,'highpass',5000);
+    }},
+    battle:{bpm:142,bars:8,step(s,t,out,dt){
+      const bar=Math.floor(s/16),k=s%16,ch=BATTLE_CH[bar];
+      if(k%2===0){const m=BATTLE_MEL[bar][k/2];if(m)lead(m,t,out,dt*1.8)}
+      if(k%2===0)bass(ch[0]+(k%4===2?12:0),t,out,.9,.16);
+      if(k===0||k===8||(k===11&&bar%2))kick(t,out,1);
+      if(k===4||k===12)snare(t,out,1);
+      if(k%2===0)hat(t,out,k%4===2?1:.6);
+      if(k===2||k===10)for(const m of ch.slice(1))osc('triangle',mtof(m),t,.12,out,.05);
+    }}
+  };
+  function tick(){
+    const T=A.cur;if(!T||!A.ctx||A.ctx.state!=='running')return;
+    const dt=60/T.def.bpm/4,ahead=A.ctx.currentTime+.15;
+    if(T.next<A.ctx.currentTime-.2)T.next=A.ctx.currentTime+.05; // resumed after a pause
+    while(T.next<ahead){T.def.step(T.step,T.next,T.out,dt);T.step=(T.step+1)%(T.def.bars*16);T.next+=dt}
+  }
+  function stopCur(){
+    const T=A.cur;A.cur=null;if(!T)return;
+    const t=A.ctx.currentTime;T.out.gain.setTargetAtTime(0,t,.12);
+    setTimeout(()=>T.out.disconnect(),900);
+  }
+  function play(name){
+    if(!A.ctx)return;
+    if(A.cur&&A.cur.name===name)return;
+    stopCur();
+    if(!TRACKS[name])return;
+    const out=A.ctx.createGain();out.gain.value=1;out.connect(A.bgm);
+    A.cur={name,def:TRACKS[name],step:0,next:A.ctx.currentTime+.08,out};
+  }
+  function music(name){A.want=name;if(A.ctx)play(name)}
+
+  /* --- sound effects --- */
+  // a palm slap: a sharp burst of band-passed noise, a high crack and a short low thump
+  function slapNoise(t,out,peak,dec,type,freq,q){
+    const ctx=A.ctx,s=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain();
+    s.buffer=A.noise;f.type=type;f.frequency.value=freq;f.Q.value=q;
+    g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(peak,t+.0012);g.gain.exponentialRampToValueAtTime(0.0001,t+dec);
+    s.connect(f);f.connect(g);g.connect(out);s.start(t,Math.random()*.5);s.stop(t+dec+.05);
+  }
+  function slap(t,out,power,big){
+    const v=Math.min(1.25,.78+power*.07+(big?.18:0));
+    slapNoise(t,out,1.1*v,.09+power*.008,'bandpass',2100-power*120,.8);   // the smack
+    slapNoise(t,out,.7*v,.022,'highpass',5200,.7);                         // the crack
+    slapNoise(t+.011,out,.35*v,.05,'bandpass',1150,1.3);                    // the fingers landing a beat later
+    const ctx=A.ctx,o=ctx.createOscillator(),g=ctx.createGain();           // body thump
+    o.type='sine';o.frequency.setValueAtTime(230-power*12,t);o.frequency.exponentialRampToValueAtTime(95,t+.08);
+    g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(.6*v,t+.003);g.gain.exponentialRampToValueAtTime(0.0001,t+.11);
+    o.connect(g);g.connect(out);o.start(t);o.stop(t+.15);
+  }
+  // dry + a darkening feedback echo, torn down after it dies away
+  function echoBus(){
+    const ctx=A.ctx,inp=ctx.createGain(),d=ctx.createDelay(1),fb=ctx.createGain(),lp=ctx.createBiquadFilter(),wet=ctx.createGain();
+    d.delayTime.value=.19;fb.gain.value=.5;lp.type='lowpass';lp.frequency.value=2600;wet.gain.value=.75;
+    inp.connect(A.se);inp.connect(d);d.connect(lp);lp.connect(fb);fb.connect(d);lp.connect(wet);wet.connect(A.se);
+    setTimeout(()=>{try{inp.disconnect();d.disconnect();lp.disconnect();fb.disconnect();wet.disconnect()}catch(e){}},3000);
+    return inp;
+  }
+  const now=()=>A.ctx?A.ctx.currentTime+.005:0;
+  const SE={
+    attack(power,killed,blocked){
+      if(!A.ctx)return;const t=now();
+      if(blocked){const o=A.se;osc('square',140,t,.12,o,.25);noise(t,.08,o,.3,'lowpass',900);osc('sine',90,t+.02,.18,o,.4);return}
+      slap(t,killed?echoBus():A.se,power,killed);
+    },
+    card(type){
+      if(!A.ctx)return;const t=now(),o=A.se,base=[72,67,74,76,69][type]||72;
+      [0,4,7,12,16,19].forEach((s,i)=>osc('triangle',mtof(base+s),t+i*.045,.32,o,.22));
+      osc('sine',mtof(base+24),t+.27,.5,o,.12);
+      const s=A.ctx.createBufferSource(),f=A.ctx.createBiquadFilter(),g=A.ctx.createGain();
+      s.buffer=A.noise;f.type='bandpass';f.Q.value=3;f.frequency.setValueAtTime(1500,t);f.frequency.exponentialRampToValueAtTime(9000,t+.35);
+      env(g,t,.02,.12,.35);s.connect(f);f.connect(g);g.connect(o);s.start(t);s.stop(t+.45);
+    },
+    split(){
+      if(!A.ctx)return;const t=now(),o=A.se;
+      [[-0.7,1.5],[0.7,.66]].forEach(([pan,r])=>{
+        const p=A.ctx.createOscillator(),g=A.ctx.createGain(),lfo=A.ctx.createOscillator(),lg=A.ctx.createGain();
+        p.type='sine';p.frequency.setValueAtTime(520,t);p.frequency.exponentialRampToValueAtTime(520*r,t+.22);
+        lfo.frequency.value=18;lg.gain.value=22;lfo.connect(lg);lg.connect(p.frequency);
+        env(g,t,.005,.42,.32);p.connect(g);
+        let node=g;if(A.ctx.createStereoPanner){const pn=A.ctx.createStereoPanner();pn.pan.value=pan;g.connect(pn);node=pn}
+        node.connect(o);p.start(t);lfo.start(t);p.stop(t+.4);lfo.stop(t+.4);
+      });
+    },
+    swap(){
+      if(!A.ctx)return;const t=now(),o=A.se;
+      const s=A.ctx.createBufferSource(),f=A.ctx.createBiquadFilter(),g=A.ctx.createGain();
+      s.buffer=A.noise;f.type='bandpass';f.Q.value=4;f.frequency.setValueAtTime(600,t);f.frequency.exponentialRampToValueAtTime(4000,t+.12);f.frequency.exponentialRampToValueAtTime(600,t+.25);
+      env(g,t,.01,.35,.24);s.connect(f);f.connect(g);g.connect(o);s.start(t);s.stop(t+.3);
+      osc('triangle',mtof(76),t+.02,.1,o,.2);osc('triangle',mtof(71),t+.13,.12,o,.2);
+    },
+    end(kind){
+      if(!A.ctx)return;const t=now()+.05,o=A.se;
+      if(kind==='win'){
+        [[60,0],[64,.12],[67,.24],[72,.36]].forEach(([m,d])=>{osc('square',mtof(m),t+d,.14,o,.12);osc('triangle',mtof(m),t+d,.2,o,.25)});
+        [72,76,79,84].forEach(m=>{osc('triangle',mtof(m),t+.52,1.1,o,.2,.02);osc('square',mtof(m),t+.52,.5,o,.05,.02)});
+        noise(t+.52,.6,o,.08,'highpass',6000);
+      }else if(kind==='lose'){
+        [[67,0],[63,.22],[60,.44],[55,.7]].forEach(([m,d],i)=>osc('triangle',mtof(m),t+d,i===3?1.1:.3,o,.3));
+        osc('sine',mtof(43),t+.7,1.2,o,.3);
+      }else{
+        osc('triangle',mtof(67),t,.3,o,.28);osc('triangle',mtof(67),t+.25,.3,o,.28);osc('triangle',mtof(62),t+.5,.9,o,.28);
+      }
+    },
+    mikiri(){ // a blade catching the blow: bright metallic ring with a quick rising edge
+      if(!A.ctx)return;const t=now(),o=A.se;
+      slapNoise(t,o,.5,.05,'highpass',6000,.7);
+      [2650,3980,5310].forEach((f,i)=>{const ctx=A.ctx,q=ctx.createOscillator(),g=ctx.createGain();
+        q.type='sine';q.frequency.setValueAtTime(f*.96,t);q.frequency.exponentialRampToValueAtTime(f,t+.05);
+        g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(.22/(i+1),t+.004);g.gain.exponentialRampToValueAtTime(0.0001,t+.9-i*.2);
+        q.connect(g);g.connect(o);q.start(t);q.stop(t+1)});
+    },
+    blip(){if(!A.ctx)return;const t=now();osc('triangle',mtof(79),t,.12,A.se,.3);osc('triangle',mtof(84),t+.07,.14,A.se,.25)}
+  };
+  function setVol(kind,v){A.vol[kind]=Math.max(0,Math.min(100,Math.round(v)));applyVol();try{localStorage.setItem(VOL_KEY,JSON.stringify(A.vol))}catch(e){}}
+  // audio may only start after the viewer interacts
+  const unlock=()=>init();
+  window.addEventListener('pointerdown',unlock,{capture:true});
+  window.addEventListener('keydown',unlock,{capture:true});
+  document.addEventListener('visibilitychange',()=>{if(!A.ctx)return;if(document.hidden)A.ctx.suspend().catch(()=>{});else A.ctx.resume().catch(()=>{})});
+  return {music,SE,setVol,vol:()=>A.vol,started:()=>!!A.ctx&&A.ctx.state==='running'};
+})();
+
+/* ---------- realistic hands: a jointed SDF hand model ray-marched in WebGL, baked to images ---------- */
+const HAND3D=(()=>{
+  const W=320,H=480,SS=2;              // output size, supersampling
+  const sprites={},listeners=[];let ok=false,started=false;
+  const VS='attribute vec2 a;varying vec2 vUv;void main(){vUv=a*.5+.5;gl_Position=vec4(a,0.,1.);}';
+  const FS=`precision highp float;
+varying vec2 vUv;
+uniform vec3 uJ[20];uniform float uR[15];uniform vec3 uV[5];uniform vec3 uBand;uniform vec3 uCloth;uniform vec2 uY;uniform float uSS;
+float smin(float a,float b,float k){float h=clamp(.5+.5*(b-a)/k,0.,1.);return mix(b,a,h)-k*h*(1.-h);}
+float sdCap2(vec3 p,vec3 a,vec3 b,float r0,float r1){vec3 pa=p-a,ba=b-a;float h=clamp(dot(pa,ba)/dot(ba,ba),0.,1.);return length(pa-ba*h)-mix(r0,r1,h);}
+float sdEll(vec3 p,vec3 r){float k0=length(p/r);float k1=length(p/(r*r));return k0*(k0-1.)/k1;}
+float sdRBox(vec3 p,vec3 b,float r){vec3 q=abs(p)-b;return length(max(q,0.))+min(max(q.x,max(q.y,q.z)),0.)-r;}
+float hash(vec3 p){p=fract(p*.3183099+.1);p*=17.;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}
+float vnoise(vec3 x){vec3 i=floor(x),f=fract(x);f=f*f*(3.-2.*f);
+  return mix(mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x),mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),
+             mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);}
+vec3 tilt(vec3 p){float cy=cos(.22),sy=sin(.22),cx=cos(-.1),sx=sin(-.1);
+  p=vec3(cy*p.x+sy*p.z,p.y,-sy*p.x+cy*p.z);return vec3(p.x,cx*p.y-sx*p.z,sx*p.y+cx*p.z);}
+float skin(vec3 p){
+  float w=mix(3.15,3.85,clamp((p.y+4.4)/8.8,0.,1.));
+  vec3 q=p;q.z+=.075*q.x*q.x;q.x*=3.85/w;
+  float d=sdRBox(q,vec3(3.25,3.75,.62),.7)*.85;
+  d=smin(d,sdEll(p-vec3(-2.45,-1.9,-1.),vec3(1.5,2.3,1.25)),.9);
+  d=smin(d,sdEll(p-vec3(2.55,-1.4,-.75),vec3(1.1,2.6,1.05)),.8);
+  vec3 f=p;f.x/=1.22;f.z/=.8;
+  d=smin(d,sdCap2(f,vec3(0.,-3.,-.35),vec3(0.,-80.,-.6),2.5,3.3)*.8,1.7);
+  for(int i=0;i<5;i++){
+    vec3 a=uJ[i*4],b=uJ[i*4+1],c=uJ[i*4+2],e=uJ[i*4+3];
+    float r0=uR[i*3],r1=uR[i*3+1],r2=uR[i*3+2];
+    float df=sdCap2(p,a,b,r0,r1*1.03);
+    df=smin(df,sdCap2(p,b,c,r1,r2*1.03),.16);
+    df=smin(df,sdCap2(p,c,e,r2,r2*.88),.1);
+    d=smin(d,df,i==4?.95:.42);
+  }
+  for(int i=0;i<4;i++){
+    d=smin(d,length(p-uJ[i*4]-vec3(0.,-.05,.42))-.55,.45);
+    float x0=uJ[i*4].x;vec3 ta=vec3(x0*.92,3.5,1.12-.075*x0*x0*.85),tb=vec3(x0*.3,-3.4,1.05-.075*x0*x0*.09);
+    d=smin(d,sdCap2(p,ta,tb,.24,.2),.55);
+  }
+  return d;
+}
+float band(vec3 p){vec3 q=p;q.x/=1.24;q.z/=.84;float rad=length(q.xz);
+  vec2 e=vec2(abs(rad-2.66)-.18,abs(p.y+6.)-.72);return (length(max(e,0.))+min(max(e.x,e.y),0.)-.22)*.8;}
+float sleeve(vec3 p){
+  vec3 f=p;f.x/=1.2;f.z/=.86;
+  float y=p.y,a=atan(f.x,f.z+.5);
+  float r=3.2+.012*(-13.-y)+.04*sin(y*1.1)+.16*(vnoise(vec3(a*1.6,y*.32,0.))-.5)+.1*(vnoise(vec3(a*3.,y*.8+a,3.))-.5)+.28*exp(-(y+13.6)*(y+13.6)*1.5);
+  float d=length(vec2(f.x,f.z+.5))-r;
+  return max(d,y+13.)*.8;
+}
+vec2 map(vec3 p){p=tilt(p);float s=skin(p),b=band(p),c=sleeve(p);
+  vec2 r=b<s?vec2(b,2.):vec2(s,1.);return c<r.x?vec2(c,3.):r;}
+vec3 nrm(vec3 p){vec2 k=vec2(1,-1)*.004;return normalize(k.xyy*map(p+k.xyy).x+k.yyx*map(p+k.yyx).x+k.yxy*map(p+k.yxy).x+k.xxx*map(p+k.xxx).x);}
+float shadow(vec3 ro,vec3 rd){float r=1.,t=.06;for(int i=0;i<40;i++){float h=map(ro+rd*t).x;r=min(r,9.*h/t);t+=clamp(h,.05,.6);if(r<.002||t>18.)break;}return clamp(r,0.,1.);}
+float ao(vec3 p,vec3 n){float o=0.,s=1.;for(int i=1;i<6;i++){float h=.12*float(i);o+=(h-map(p+n*h).x)*s;s*=.75;}return clamp(1.-1.6*o,0.,1.);}
+vec3 aces(vec3 x){return clamp((x*(2.51*x+.03))/(x*(2.43*x+.59)+.14),0.,1.);}
+float bh(vec3 q){return .55*vnoise(q*7.)+.3*vnoise(q*17.)+.15*vnoise(q*43.);}
+void main(){
+  vec2 uv=vUv;
+  vec3 ro=vec3(mix(-7.5,7.5,uv.x),mix(uY.x,uY.y,uv.y),30.),rd=vec3(0.,0.,-1.);
+  float t=0.;vec2 h=vec2(1e3,0.);
+  for(int i=0;i<160;i++){h=map(ro+rd*t);if(h.x<.0015*(1.+t*.05)||t>60.)break;t+=h.x*.9;}
+  if(t>60.||h.x>.05){gl_FragColor=vec4(0.);return;}
+  vec3 p=ro+rd*t,n=nrm(p),v=-rd,q=tilt(p);
+  vec3 L1=normalize(vec3(-.55,.62,.62)),L2=normalize(vec3(.75,.05,.5)),L3=normalize(vec3(.35,.5,-.85));
+  float sh=shadow(p+n*.03,L1),oc=ao(p,n);
+  vec3 alb;float spec=.07,pw=28.,wrap=.5,bump=0.,trans=0.,nailM=0.;
+  if(h.y>2.5){ // sleeve: knit cotton with ribs and rows
+    float ang=atan(q.x,q.z+.5),rib=.5+.5*sin(ang*44.+vnoise(q*vec3(1.,.4,1.))*2.);
+    alb=uCloth*(.86+.12*rib+.09*vnoise(q*vec3(3.,1.,3.))+.07*vnoise(q*vec3(30.,90.,30.)));spec=.025;pw=9.;wrap=.35;
+    n=normalize(n+.09*(rib-.5)*vec3(cos(ang),0.,-sin(ang)));
+  }else if(h.y>1.5){ // terry-cloth wristband
+    float stripe=step(.5,abs(q.y+6.));
+    alb=mix(uBand,vec3(.93),stripe)*(.8+.3*vnoise(q*28.));spec=.015;pw=6.;wrap=.2;
+    n=normalize(n+.22*(vec3(vnoise(q*31.),vnoise(q*29.+3.),vnoise(q*27.+7.))-.5));
+  }else{ // skin
+    alb=vec3(.80,.545,.42);
+    float jr=0.;for(int i=0;i<20;i++){vec3 dj=q-uJ[i];jr+=exp(-2.4*dot(dj,dj));}
+    alb=mix(alb,vec3(.80,.45,.38),clamp(jr*.42,0.,.55));
+    alb*=.93+.1*vnoise(q*1.7)+.05*vnoise(q*6.)+.03*vnoise(q*23.);
+    // creases across the backs of the finger joints
+    float cr=0.;
+    for(int i=0;i<5;i++){for(int j=1;j<3;j++){
+      vec3 c=uJ[i*4+j],ax=normalize(uJ[i*4+j+1]-uJ[i*4+j-1]),dq=q-c;float dd=dot(dq,ax),rr=length(dq-ax*dd);
+      float lines=pow(.5+.5*sin(dd*30.+vnoise(q*3.)*4.),3.);
+      cr+=exp(-dd*dd*9.)*(1.-smoothstep(uR[i*3+1]*.9,uR[i*3+1]*1.3,rr))*lines*(.6+.8*vnoise(q*9.+float(i*2+j)));
+    }}
+    alb*=1.-.15*clamp(cr,0.,1.)*smoothstep(.15,.65,n.z);
+    // faint veins on the back of the hand
+    float vn=abs(vnoise(vec3(q.x*1.05+sin(q.y*.5),q.y*.36,5.3))*2.-1.);
+    float vein=(1.-smoothstep(0.,.07,vn))*smoothstep(-6.5,-2.5,q.y)*(1.-smoothstep(1.5,3.6,q.y))*smoothstep(.25,.85,n.z);
+    alb=mix(alb,alb*vec3(.84,.86,1.04),vein*.55);
+    bump=.012+.008*vein;trans=1.;
+    spec=.07*(.6+.8*vnoise(q*2.6));pw=24.;
+    for(int i=0;i<5;i++){
+      vec3 c=uJ[i*4+2],e=uJ[i*4+3],ax=e-c;float L=length(ax);ax/=L;
+      vec3 d=q-c;float tt=dot(d,ax)/L;vec3 lat=d-ax*dot(d,ax);
+      float side=dot(normalize(lat),uV[i]);
+      vec3 sid=lat-uV[i]*dot(lat,uV[i]);
+      float m=smoothstep(.3,.42,tt)*(1.-smoothstep(1.12,1.3,tt))*smoothstep(.6,.8,side)*(1.-smoothstep(uR[i*3+2]*.6,uR[i*3+2]*.74,length(sid)))*(1.-smoothstep(uR[i*3+2]*1.05,uR[i*3+2]*1.3,length(lat)));
+      if(m>0.){
+        vec3 nail=mix(vec3(.92,.70,.65),vec3(.97,.93,.88),smoothstep(.93,1.06,tt));
+        nail=mix(nail,vec3(.96,.88,.86),(1.-smoothstep(.40,.51,tt))*.7);      // lunula
+        nail*=1.-.13*exp(-pow((tt-.355)*26.,2.));                            // cuticle
+        nail*=.97+.06*sin(dot(sid,cross(ax,uV[i]))*30.);                      // faint ridges
+        alb=mix(alb,nail,m);spec=mix(spec,.6,m);pw=mix(pw,140.,m);nailM=max(nailM,m);
+      }
+    }
+  }
+  if(bump>0.){ // pores and fine relief
+    float e=.012,h0=bh(q);vec3 g=vec3(bh(q+vec3(e,0.,0.))-h0,bh(q+vec3(0.,e,0.))-h0,bh(q+vec3(0.,0.,e))-h0)/e;
+    g-=n*dot(g,n);n=normalize(n-bump*(1.-nailM)*g);
+  }
+  alb=pow(alb,vec3(2.2));
+  float d1=dot(n,L1),w1=clamp((d1+wrap)/(1.+wrap),0.,1.);
+  vec3 sss=mix(vec3(1.,.40,.28),vec3(1.),smoothstep(0.,.6,d1));
+  vec3 col=alb*w1*sss*mix(vec3(.32,.17,.13),vec3(1.),sh)*vec3(1.,.95,.87)*2.35;
+  vec3 amb=mix(vec3(.62,.46,.32),vec3(.72,.78,.9),.5+.5*n.y);
+  col+=alb*amb*.4*oc;
+  col+=alb*clamp(dot(n,L2)*.5+.5,0.,1.)*vec3(.5,.56,.7)*.3*oc;
+  if(trans>0.){float th=-map(p-n*.5).x;float tr=clamp(1.-th/.45,0.,1.);col+=alb*vec3(1.,.3,.16)*tr*(.2+.3*clamp(-d1,0.,1.))*oc;}
+  vec3 hv=normalize(L1+v);float fr=.04+.96*pow(1.-max(dot(n,v),0.),5.);
+  col+=vec3(1.,.95,.9)*pow(max(dot(n,hv),0.),pw)*spec*(1.+fr*2.)*sh*1.7;
+  col+=vec3(1.,.95,.9)*pow(max(dot(n,hv),0.),pw*.25)*spec*.22*sh;
+  col+=vec3(1.,.85,.75)*pow(1.-max(dot(n,v),0.),3.)*.26*clamp(dot(n,L3)+.6,0.,1.);
+  col*=mix(.55,1.,oc);
+  col=aces(col*.97);
+  gl_FragColor=vec4(pow(col,vec3(1./2.2)),1.);
+}`;
+  // knees of someone sitting seiza, seen from above: knee caps at the top, thighs running off the bottom
+  const FSK=FS.split('float skin(vec3 p){')[0]+`
+float knees(vec3 p){
+  float d=1e3;
+  for(int s=0;s<2;s++){
+    float sx=s==0?-1.:1.;
+    vec3 k=vec3(sx*3.35,1.88,0.);
+    float th=sdCap2(p,k,vec3(sx*4.,-34.,.75),2.67,3.6);
+    th=smin(th,length((p-k-vec3(0.,.56,1.12))/vec3(1.,1.1,.78))-1.88,.9);
+    float a=atan(p.x-k.x,p.z+.3);
+    th+=(.22*(vnoise(vec3(a*1.8,p.y*.5,sx))-.5)+.08*sin(a*4.+p.y*1.2))*smoothstep(-10.,-1.,p.y)*smoothstep(4.,0.,p.y);
+    d=smin(d,th,.5);
+  }
+  return d*.85;
+}
+vec3 aces(vec3 x){return clamp((x*(2.51*x+.03))/(x*(2.43*x+.59)+.14),0.,1.);}
+vec3 kn(vec3 p){vec2 k=vec2(1,-1)*.004;return normalize(k.xyy*knees(p+k.xyy)+k.yyx*knees(p+k.yyx)+k.yxy*knees(p+k.yxy)+k.xxx*knees(p+k.xxx));}
+void main(){
+  vec3 ro=vec3(mix(-10.,10.,vUv.x),mix(-4.,5.4,vUv.y),30.),rd=vec3(0.,0.,-1.);
+  float t=0.,h=1e3;
+  for(int i=0;i<140;i++){h=knees(ro+rd*t);if(h<.002||t>60.)break;t+=h*.9;}
+  if(t>60.||h>.05){gl_FragColor=vec4(0.);return;}
+  vec3 p=ro+rd*t,n=kn(p),L=normalize(vec3(-.5,.6,.65));
+  float o=0.,sc=1.;for(int i=1;i<6;i++){float hh=.18*float(i);o+=(hh-knees(p+n*hh))*sc;sc*=.75;}o=clamp(1.-1.4*o,0.,1.);
+  float sh=1.,st=.08;for(int i=0;i<30;i++){float hh=knees(p+n*.04+L*st);sh=min(sh,8.*hh/st);st+=clamp(hh,.06,.7);if(sh<.01||st>16.)break;}sh=clamp(sh,0.,1.);
+  float tw=.5+.5*sin((p.x*.8+p.y)*34.+vnoise(p*2.)*3.);
+  n=normalize(n+.06*(tw-.5)*normalize(vec3(1.,-1.,0.)));
+  vec3 alb=pow(uCloth*(.88+.1*tw+.1*vnoise(p*vec3(3.,1.,3.))+.06*vnoise(p*40.)),vec3(2.2));
+  float d1=dot(n,L),w=clamp((d1+.35)/1.35,0.,1.);
+  vec3 col=alb*w*mix(vec3(.3,.25,.22),vec3(1.),sh)*vec3(1.,.95,.88)*2.3+alb*vec3(.6,.62,.7)*.35*o+alb*.15*o;
+  col+=vec3(1.,.97,.92)*pow(max(dot(n,normalize(L+vec3(0.,0.,1.))),0.),18.)*.06*sh;
+  col*=mix(.5,1.,o);
+  gl_FragColor=vec4(pow(aces(col),vec3(1./2.2)),1.);
+}`;
+  // a yunomi (Japanese teacup) of green tea, seen from above and slightly in front
+  const FSY=FS.split('float skin(vec3 p){')[0]+`
+float sdCyl(vec3 p,float r,float h0,float h1){vec2 d=vec2(length(p.xy)-r,max(h0-p.z,p.z-h1));return min(max(d.x,d.y),0.)+length(max(d,0.));}
+float smax(float a,float b,float k){return -smin(-a,-b,k);}
+vec3 tc(vec3 p){float c=cos(-.4),s=sin(-.4);p=vec3(p.x,c*p.y+s*p.z,-s*p.y+c*p.z);return p+vec3(0.,0.,4.4);}
+float rOut(float z){return 3.15+.035*z+.04*sin(z*2.3);}
+float rW(vec3 q){float a=atan(q.y,q.x);return rOut(q.z)+.05*sin(a*3.+q.z*.7)+.03*sin(a*5.-1.);}
+vec2 cup(vec3 q){
+  float o=sdCyl(q,rW(q),0.,8.)-.12;
+  float i=sdCyl(q,rW(q)-.42,.75,9.5);
+  float c=smax(o,-i,.18)*.9;
+  float t=max(max(length(q.xy)-(rW(q)-.4),q.z-6.6),.75-q.z);
+  return t<c?vec2(t,2.):vec2(c,1.);
+}
+vec2 mapY(vec3 p){return cup(tc(p));}
+vec2 h2(vec2 p){return fract(sin(vec2(dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3))))*43758.5453);}
+float crack(vec2 u){vec2 i=floor(u),f=fract(u);float d1=8.,d2=8.;
+  for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec2 g=vec2(float(x),float(y)),r=g+h2(i+g)-f;float d=dot(r,r);if(d<d1){d2=d1;d1=d;}else if(d<d2)d2=d;}
+  return sqrt(d2)-sqrt(d1);}
+vec3 ny(vec3 p){vec2 k=vec2(1,-1)*.003;return normalize(k.xyy*mapY(p+k.xyy).x+k.yyx*mapY(p+k.yyx).x+k.yxy*mapY(p+k.yxy).x+k.xxx*mapY(p+k.xxx).x);}
+vec3 aces(vec3 x){return clamp((x*(2.51*x+.03))/(x*(2.43*x+.59)+.14),0.,1.);}
+void main(){
+  vec3 ro=vec3(mix(-5.6,5.6,vUv.x),mix(-5.6,5.6,vUv.y),30.),rd=vec3(0.,0.,-1.);
+  float t=0.;vec2 h=vec2(1e3,0.);
+  for(int i=0;i<160;i++){h=mapY(ro+rd*t);if(h.x<.0015||t>60.)break;t+=h.x*.85;}
+  if(t>60.||h.x>.05){gl_FragColor=vec4(0.);return;}
+  vec3 p=ro+rd*t,n=ny(p),q=tc(p),v=-rd,L=normalize(vec3(-.55,.62,.62));
+  float sh=1.,st=.06;for(int i=0;i<40;i++){float hh=mapY(p+n*.02+L*st).x;sh=min(sh,10.*hh/st);st+=clamp(hh,.03,.5);if(sh<.005||st>14.)break;}sh=clamp(sh,0.,1.);
+  float o=0.,sc=1.;for(int i=1;i<6;i++){float hh=.12*float(i);o+=(hh-mapY(p+n*hh).x)*sc;sc*=.75;}o=clamp(1.-1.5*o,0.,1.);
+  vec3 alb;float spec,pw,kd=1.;
+  if(h.y>1.5){
+    kd=.5;
+    float r=length(q.xy)/(rOut(6.6)-.4);
+    alb=mix(vec3(.47,.46,.15),vec3(.27,.29,.07),smoothstep(.1,1.,r))*mix(1.,.72,smoothstep(.85,1.,r));
+    alb*=.95+.1*vnoise(q*3.);
+    alb=mix(alb,vec3(.85,.86,.6),smoothstep(.88,.97,r)*step(.8,vnoise(q*22.))*.6);
+    spec=.9;pw=140.;
+  }else{
+    alb=vec3(.84,.78,.66)*(.93+.1*vnoise(q*2.));
+    float cr=crack(vec2(atan(q.y,q.x)*3.4,q.z)*2.1);
+    alb*=1.-.22*(1.-smoothstep(.02,.07,cr));
+    float sp=smoothstep(.82,.86,vnoise(q*9.));alb=mix(alb,vec3(.36,.24,.16),sp*.8);
+    alb=mix(alb,vec3(.5,.33,.2),smoothstep(7.2,7.9,q.z)*.85);
+    alb=mix(alb,vec3(.62,.5,.38),smoothstep(1.6,.2,q.z)*.6);
+    spec=.5;pw=70.;
+  }
+  alb=pow(alb,vec3(2.2));
+  float d1=dot(n,L),w=clamp((d1+.25)/1.25,0.,1.);
+  vec3 col=alb*w*kd*mix(vec3(.25,.2,.17),vec3(1.),sh)*vec3(1.,.95,.88)*2.3+alb*vec3(.55,.6,.7)*.35*o+alb*.15*o;
+  vec3 hv=normalize(L+v);float fr=.04+.96*pow(1.-max(dot(n,v),0.),5.);
+  col+=vec3(1.,.97,.92)*pow(max(dot(n,hv),0.),pw)*spec*(1.+fr)*sh*1.5;
+  col+=vec3(.9,.95,1.)*fr*.12*o;
+  col*=mix(.5,1.,o);
+  gl_FragColor=vec4(pow(aces(col),vec3(1./2.2)),1.);
+}`;
+  /* --- pose: forward kinematics on the CPU --- */
+  const FING=[ // base x, base y, segment lengths, radii, spread
+    {x:-2.62,y:4.15,L:[4.,2.45,1.9],R:[.9,.82,.74],s:.06},
+    {x:-.9,y:4.45,L:[4.4,2.8,2.],R:[.93,.85,.76],s:0},
+    {x:.95,y:4.25,L:[4.1,2.6,1.92],R:[.88,.8,.72],s:-.05},
+    {x:2.7,y:3.75,L:[3.25,1.95,1.7],R:[.76,.7,.63],s:-.13}];
+  const norm=v=>{const l=Math.hypot(v[0],v[1],v[2]);return [v[0]/l,v[1]/l,v[2]/l]};
+  const add=(a,b,k)=>[a[0]+b[0]*k,a[1]+b[1]*k,a[2]+b[2]*k];
+  function chain(base,dir,dors,L,ang){
+    let d=norm(dir),v=norm(dors),p=base;const pts=[p];
+    for(let j=0;j<3;j++){
+      const c=Math.cos(ang[j]),s=Math.sin(ang[j]);
+      const nd=norm([d[0]*c-v[0]*s,d[1]*c-v[1]*s,d[2]*c-v[2]*s]);
+      const nv=norm([v[0]*c+d[0]*s,v[1]*c+d[1]*s,v[2]*c+d[2]*s]);
+      d=nd;v=nv;p=add(p,d,L[j]);pts.push(p);
+    }
+    return {pts,v};
+  }
+  function pose(n){
+    const J=[],R=[],V=[];
+    FING.forEach((f,i)=>{
+      const ext=i<n;
+      const ang=ext?[.07,.1,.06]:[1.52,1.72,.95];
+      const base=[f.x,ext?f.y-.3:f.y-.25,ext?-.05:-.15];
+      const c=chain(base,[-Math.sin(f.s),Math.cos(f.s),0],[0,0,1],f.L,ang);
+      J.push(...c.pts);R.push(...f.R);V.push(c.v);
+    });
+    // thumb (right hand seen from the back: thumb on the left)
+    let th;
+    if(n>=5)th=chain([-2.8,-2.2,-.55],[-.55,.8,.25],[-.35,-.05,.9],[3.,2.5,2.15],[.05,.1,.08]);
+    else th=chain([-2.85,-2.3,-.75],[-.42,.84,-.32],[-.62,-.35,.7],[3.6,2.9,2.4],[.15,.85,.55]);
+    J.push(...th.pts);R.push(1.12,1.,.86);V.push(th.v);
+    return {J,R,V};
+  }
+  let gl,prog,progK,progY,cv,loc={},locK={};
+  function init(){
+    cv=document.createElement('canvas');cv.width=W*SS;cv.height=H*SS;
+    gl=cv.getContext('webgl',{premultipliedAlpha:false,preserveDrawingBuffer:true,antialias:false,alpha:true});
+    if(!gl)return false;
+    const sh=(type,src)=>{const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));return s};
+    const mk=fs=>{const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,VS));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,fs));gl.bindAttribLocation(p,0,'a');gl.linkProgram(p);
+      if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));return p};
+    prog=mk(FS);progK=mk(FSK);progY=mk(FSY);
+    gl.useProgram(prog);
+    const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+    for(const k of ['uJ','uR','uV','uBand','uCloth','uY'])loc[k]=gl.getUniformLocation(prog,k);
+    locK.uCloth=gl.getUniformLocation(progK,'uCloth');
+    return true;
+  }
+  const BANDS=[[.13,.3,.78],[.8,.17,.15]];
+  const CLOTH=[[.12,.15,.26],[.3,.09,.1]];
+  function frame(w,h){cv.width=w;cv.height=h;gl.viewport(0,0,w,h);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT)}
+  function grab(w,h){
+    const out=document.createElement('canvas');out.width=w;out.height=h;
+    const c2=out.getContext('2d');c2.imageSmoothingEnabled=true;c2.imageSmoothingQuality='high';
+    c2.drawImage(cv,0,0,w,h);return out.toDataURL('image/png');
+  }
+  let useBlob=true;const blobs={};
+  function toBlobURL(data){
+    try{const b=atob(data.split(',')[1]),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);
+      return URL.createObjectURL(new Blob([u],{type:'image/png'}))}catch(e){return null}
+  }
+  const ARM_LEN=60; // world units below the hand image (the hand image spans 22.5)
+  function bake(n,b,arm){
+    const P=pose(n);
+    gl.useProgram(prog);
+    gl.uniform3fv(loc.uCloth,new Float32Array(CLOTH[b]));
+    gl.uniform3fv(loc.uJ,new Float32Array(P.J.flat()));
+    gl.uniform1fv(loc.uR,new Float32Array(P.R));
+    gl.uniform3fv(loc.uV,new Float32Array(P.V.flat()));
+    gl.uniform3fv(loc.uBand,new Float32Array(BANDS[b]));
+    if(arm){
+      const h=Math.round(H*ARM_LEN/22.5);
+      gl.uniform2f(loc.uY,-7.5-ARM_LEN,-7.5);frame(W,h);gl.drawArrays(gl.TRIANGLES,0,3);return grab(W,h);
+    }
+    gl.uniform2f(loc.uY,-7.5,15.);frame(W*SS,H*SS);gl.drawArrays(gl.TRIANGLES,0,3);return grab(W,H);
+  }
+  function bakeCup(){gl.useProgram(progY);frame(512,512);gl.drawArrays(gl.TRIANGLES,0,3);return grab(256,256)}
+  function bakeKnees(b){
+    gl.useProgram(progK);gl.uniform3fv(locK.uCloth,new Float32Array([[.085,.09,.105],[.1,.085,.08]][b]));
+    frame(1280,600);gl.drawArrays(gl.TRIANGLES,0,3);return grab(640,300);
+  }
+  function build(){
+    if(started)return;started=true;
+    try{if(!init())return}catch(e){console.warn('hand3d',e);return}
+    const jobs=[];for(const b of [0,1])for(const n of [1,0,2,3,4,5])jobs.push([n,b]);
+    jobs.push(['arm',0],['arm',1],['knee',0],['knee',1],['cup',0]);
+    const step=()=>{
+      const j=jobs.shift();
+      if(!j){ // check once that blob: images are allowed here, then publish the sprites
+        const k=Object.keys(sprites)[0],u=k&&toBlobURL(sprites[k]);
+        const done=()=>{ok=true;listeners.forEach(f=>f())};
+        if(!u){useBlob=false;done();return}
+        const im=new Image();
+        im.onload=()=>{for(const key in sprites)blobs[key]=toBlobURL(sprites[key]);done()};
+        im.onerror=()=>{useBlob=false;done()};
+        im.src=u;return;
+      }
+      try{sprites[j[1]+':'+j[0]]=j[0]==='arm'?bake(1,j[1],true):j[0]==='knee'?bakeKnees(j[1]):j[0]==='cup'?bakeCup():bake(j[0],j[1])}catch(e){console.warn('hand3d',e);return}
+      setTimeout(step,0);
+    };
+    setTimeout(step,0);
+  }
+  return {build,get:(n,b)=>ok?((useBlob&&blobs[b+':'+n])||sprites[b+':'+n]):null,ready:()=>ok,onReady:f=>listeners.push(f),
+    _bake:(n,b)=>{if(!gl)init();return n==='arm'?bake(1,b,true):n==='knee'?bakeKnees(b):n==='cup'?bakeCup():bake(n,b)}};
+})();
+
+/* ---------- tatami floor and zelkova table top: drawn per pixel once, used as repeating backgrounds ---------- */
+(function(){
+  // small value-noise toolkit
+  const hash=(x,y,s)=>{let h=(x*374761393+y*668265263+s*362437)|0;h=(h^(h>>>13))*1274126177|0;return((h^(h>>>16))>>>0)/4294967295};
+  const smooth=t=>t*t*(3-2*t);
+  function noise(x,y,s){
+    const xi=Math.floor(x),yi=Math.floor(y),xf=smooth(x-xi),yf=smooth(y-yi);
+    const a=hash(xi,yi,s),b=hash(xi+1,yi,s),c=hash(xi,yi+1,s),d=hash(xi+1,yi+1,s);
+    return a+(b-a)*xf+(c-a)*yf+(a-b-c+d)*xf*yf;
+  }
+  const fbm=(x,y,s)=>noise(x,y,s)*.5+noise(x*2.03,y*2.03,s+1)*.25+noise(x*4.1,y*4.1,s+2)*.125+noise(x*8.3,y*8.3,s+3)*.0625;
+
+  // tatami: two rows of 2:1 mats, the second shifted half a mat; heri (cloth borders) on the long edges.
+  // Rush strips run across the short side of each mat; hemp warp threads run along its length.
+  function makeTatami(){
+    const T=800,MH=400,HW=24;
+    const cv=document.createElement('canvas');cv.width=T;cv.height=T;
+    const c=cv.getContext('2d');if(!c)return null;
+    const img=c.createImageData(T,T),d=img.data;
+    const matTone=[1,.96,1.03,.98];
+    for(let y=0;y<T;y++){
+      const row=y<MH?0:1,ly=y-row*MH,offs=row?MH:0;
+      const dh=Math.min(Math.abs(ly),Math.abs(ly-MH),Math.abs(y-T)); // distance to the nearest heri centre line
+      for(let x=0;x<T;x++){
+        const i=(y*T+x)*4;
+        if(dh<HW/2){ // heri: woven dark cloth with a fine twill, a pair of pale lines and a soft rounded sheen
+          const v=dh/(HW/2),tw=.5+.5*Math.sin((x+y)*1.9+noise(x*.2,y*.2,9)*2);
+          let k=.75+.1*tw+.15*(1-v*v)+.06*(noise(x*.6,y*.6,7)-.5);
+          const line=(Math.abs(v-.62)<.07)?1:0;
+          d[i]=(28+line*120)*k;d[i+1]=(40+line*105)*k;d[i+2]=(33+line*70)*k;d[i+3]=255;continue;
+        }
+        const mx=(x+offs)%T,mat=row*2+((x+offs)<T?0:1),mi=Math.floor(mx/(T/2))+row*2; // which mat
+        const sw=3.4,sx=mx+noise(0,y*.02,mat)*1.5,si=Math.floor(sx/sw),u=sx/sw-si;  // strip index and position across it
+        const prof=Math.sin(Math.PI*u),warp=(ly%17)/17,bulge=Math.sin(Math.PI*warp);
+        const sr=hash(si,mi,3),along=noise(si*.37,ly*.018,mi+11);
+        let k=matTone[mi%4]*(.8+.2*prof)*(.9+.1*bulge)*(.88+.16*sr)*(.92+.12*along);
+        k+=Math.pow(prof,8)*.1*(.6+.4*bulge);                      // the waxy shine down the middle of each rush
+        const g=.15+.5*sr;                                          // greener or more golden strips
+        let r=190*k*(1-g*.06),gg=180*k*(1+g*.03),b=124*k*(1-g*.15);
+        if(warp<.05||warp>.95){r*=.92;gg*=.92;b*=.9}                // the hemp warp line pressing the rushes
+        const fleck=hash(si,Math.floor(ly/6),5);
+        if(fleck>.985){r*=.78;gg*=.8;b*=.8}else if(fleck<.01){r*=1.1;gg*=1.1;b*=1.05}
+        const seam=Math.min(mx%(T/2),(T/2)-mx%(T/2));if(seam<2){r*=.55;gg*=.55;b*=.55}
+        d[i]=r;d[i+1]=gg;d[i+2]=b;d[i+3]=255;
+      }
+    }
+    c.putImageData(img,0,0);
+    const light=cv.toDataURL('image/jpeg',.88);
+    // evening version for dark mode: dimmer and cooler
+    for(let i=0;i<d.length;i+=4){d[i]*=.42;d[i+1]*=.44;d[i+2]*=.5}
+    c.putImageData(img,0,0);
+    return [light,cv.toDataURL('image/jpeg',.88)];
+  }
+
+  // zelkova (keyaki) top: four planks, flowing growth rings, fine pores along the grain, a clear finish
+  function makeWood(){
+    const Wd=900,Ht=600,cv=document.createElement('canvas');cv.width=Wd;cv.height=Ht;
+    const c=cv.getContext('2d');if(!c)return null;
+    const img=c.createImageData(Wd,Ht),d=img.data;
+    const planks=4,ph=Ht/planks;
+    for(let y=0;y<Ht;y++){
+      const k=Math.min(planks-1,Math.floor(y/ph)),ly=y-k*ph,seed=k*17+3,tone=.93+hash(k,0,1)*.14;
+      for(let x=0;x<Wd;x++){
+        // flat-sawn figure: rings bent into long flames by low-frequency noise, spacing that drifts
+        const big=fbm(x*.0012,ly*.006,seed)*9+fbm(x*.004,ly*.02,seed+4)*2.2;
+        const rings=ly*.045*(1+.35*Math.sin(ly*.013+k))+big+.25*Math.sin(x*.0019+k*1.7)*(ly/ph)*6;
+        const fr=rings-Math.floor(rings);
+        const late=Math.pow(Math.max(0,Math.sin(fr*Math.PI*2-1.2)),4)*(.6+.4*noise(x*.01,ly*.05,seed+7));   // narrow dark latewood bands
+        const pore=noise(x*.06,y*1.6,seed+5)>.72?1:0;                     // open pores: short dark dashes
+        const fleck=noise(x*.012,y*.9,seed+9);
+        let v=tone*(1-.28*late-.1*pore*(1-late*.5)+.05*(fleck-.5));
+        v*=.94+.12*fbm(x*.002,y*.004,seed+13);
+        const i=(y*Wd+x)*4;
+        d[i]=168*v;d[i+1]=104*v;d[i+2]=58*v;d[i+3]=255;
+      }
+    }
+    c.putImageData(img,0,0);
+    for(let i=1;i<planks;i++){c.fillStyle='rgba(36,16,4,.6)';c.fillRect(0,i*ph-1,Wd,2);c.fillStyle='rgba(255,225,190,.1)';c.fillRect(0,i*ph+1,Wd,1)}
+    // clear finish: a broad soft reflection of the room's light
+    const g=c.createLinearGradient(0,0,Wd,Ht*.9);
+    g.addColorStop(0,'rgba(255,240,215,.16)');g.addColorStop(.35,'rgba(255,240,215,.03)');g.addColorStop(.5,'rgba(255,245,230,.12)');
+    g.addColorStop(.62,'rgba(255,240,215,0)');g.addColorStop(1,'rgba(20,8,0,.2)');
+    c.fillStyle=g;c.fillRect(0,0,Wd,Ht);
+    return cv.toDataURL('image/jpeg',.9);
+  }
+  try{
+    const w=makeWood();if(w)document.documentElement.style.setProperty('--table-tex',`url(${w})`);
+  }catch(e){}
+  try{
+    const root=document.documentElement,t=makeTatami();
+    if(t){root.style.setProperty('--floor-l',`url(${t[0]})`);root.style.setProperty('--floor-d',`url(${t[1]})`)}
+  }catch(e){}
+})();
+
+(function(){
+const L=buildLib();
+const SIDE=['左手','右手'];
+const LV={weak:'よわい',normal:'ふつう',strong:'つよい'};
+const SHIELD='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l8 3v6c0 5-3.4 8.6-8 10.5-4.6-1.9-8-5.5-8-10.5v-6z" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linejoin="round"/></svg>';
+const CARDS=[
+  {name:'強打',g:'+1',desc:'自分の指の数＋1で相手の手を攻撃する。',how:'攻撃に使う自分の手 → 相手の手の順にタップ。指の数＋1で攻撃します。'},
+  {name:'弱体',g:'−1',desc:'相手の次の手番の攻撃をすべて−1にする。使った手番にそのまま行動できる。',how:'このまま普通に行動すると、相手の次の番の攻撃がすべて−1になります。'},
+  {name:'盾',g:SHIELD,desc:'相手の次の手番の攻撃をすべて無効にする（相手が自分の手を攻撃するのは有効）。使った手番にそのまま行動できる。',how:'このまま普通に行動すると、相手の次の番の攻撃がすべて無効になります。'},
+  {name:'連撃',g:'×2',desc:'この手番に2回行動できる（2回目はやめてもよい）。',how:'このあと2回続けて行動できます。'},
+  {name:'入れ替え',g:'⇄',desc:'自分の手1つと相手の手1つの本数を交換する。生きている手同士で、本数が違うときだけ。',how:'自分の手 → 交換する相手の手の順にタップ。'},
+  {name:'見切り',g:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M6 18L18 6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>',desc:'持っているだけで効く。相手が強打・弱体・盾・連撃・入れ替えを使うと自動で発動し、そのカードの効果を打ち消す（相手の行動は普通の行動になり、入れ替えは不発）。透視・攪乱には反応しない。自分から使うことはできない。',how:''},
+  {name:'透視',g:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.8-6.5 10-6.5S22 12 22 12s-3.8 6.5-10 6.5S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/></svg>',desc:'次の自分の手番が終わるまで、相手の手札を見られる。使った手番にそのまま行動できる。',how:'このまま普通に行動すると、次の自分の手番が終わるまで相手の手札が見えます。'},
+  {name:'攪乱',g:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h4.5c3.5 0 5.5 10 9 10H21M3 17h4.5c1.6 0 2.8-2 3.9-4.3M14.4 9.3C15.2 8 16 7 17 7h4M18.5 4.5L21 7l-2.5 2.5M18.5 14.5L21 17l-2.5 2.5" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>',desc:'自分と相手の手札をまとめてシャッフルし、それぞれの枚数はそのままで配り直す。使った手番にそのまま行動できる。',how:'このまま普通に行動すると、お互いの手札がシャッフルされて配り直されます。'}
+];
+// the support link shown in 「このゲームについて」 (hidden while empty) and the version label
+const TIP_URL='';
+const VERSION='1.0';
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let S={mode:'cpu',level:'normal',rules:{split:true,self:true},cardsOn:true,hideCpu:true,pass:true,view:0,handoff:false,
+  hands:[[1,1],[1,1]],cards:[[],[]],turn:0,fx:0,pend:0,acts:0,ren:false,usedCard:false,armed:null,
+  phase:'title',sel:null,hist:[],seen:{},last:null,result:null,jk:null,rulesOpen:false,soundOpen:false,setupFromGame:false,
+  trade:null,got:[null,null],log:[],cur:null,hint:null,hintsUsed:0,reviewOpen:false,review:null,peek:[false,false],seed:1};
+let busy=false,thinking=false,gen=0,lastPop=null,flash=null,handDelay=false,hintBusy=false,hintMidH=0;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+
+/* ---------- names & helpers ---------- */
+const isHuman=p=>S.mode==='pvp'||p===0;
+function nm(p){
+  if(S.mode==='cpu')return p===0?'あなた':'CPU';
+  return p===0?'プレイヤー1':'プレイヤー2';
+}
+const codes=()=>[L.cnt2code(L.list2cnt(S.cards[0])),L.cnt2code(L.list2cnt(S.cards[1]))];
+const stateKey=()=>{const c=codes();return L.enc(S.hands,S.turn,S.fx,c[0],c[1])};
+const armedType=()=>S.armed===null?-1:S.cards[S.turn][S.armed];
+const passMode=()=>S.mode==='pvp'&&S.pass;
+// the player whose hands sit at the bottom of the screen
+const bottom=()=>passMode()?S.view:0;
+const hidden=p=>S.phase!=='over'&&((S.mode==='cpu'&&S.hideCpu&&p===1&&!(S.peek&&S.peek[0]))||(passMode()&&p!==S.view&&!(S.peek&&S.peek[S.view])));
+
+/* ---------- solver (runs in a Worker when possible) ---------- */
+let sol=null,solJob=null;
+function solveAsync(root,r){
+  return new Promise(res=>{
+    let w=null;
+    try{
+      const src=`const L=(${buildLib.toString()})();onmessage=e=>{const s=L.solveFrom(e.data.root,e.data.r);postMessage(s,[s.keys.buffer,s.val.buffer,s.dep.buffer])}`;
+      w=new Worker(URL.createObjectURL(new Blob([src],{type:'text/javascript'})));
+    }catch(e){w=null}
+    const local=()=>setTimeout(()=>res(L.solveFrom(root,r)),0);
+    if(!w){local();return}
+    w.onmessage=e=>{res(e.data);w.terminate()};
+    w.onerror=()=>{w.terminate();local()};
+    w.postMessage({root,r});
+  }).then(s=>{const map=new Map();for(let i=0;i<s.keys.length;i++)map.set(s.keys[i],i);return {map,val:s.val,dep:s.dep,rk:JSON.stringify(r)}});
+}
+function ensureSolver(){
+  const k=stateKey(),rk=JSON.stringify(S.rules);
+  if(sol&&sol.rk===rk&&sol.map.has(k))return Promise.resolve(sol);
+  if(solJob&&solJob.rk===rk){
+    const running=solJob;
+    return running.p.then(s=>s.map.has(stateKey())?s:ensureSolver());
+  }
+  const job={rk,root:k};
+  job.p=solveAsync(k,S.rules).then(s=>{if(solJob===job){sol=s;solJob=null}return s});
+  solJob=job;return job.p;
+}
+
+/* ---------- CPU ---------- */
+function allMoves(extras){return L.genAll(S.hands,S.turn,S.fx,L.list2cnt(S.cards[S.turn]),S.rules,L.list2cnt(S.cards[1-S.turn]),!!extras)}
+const preferNoCard=a=>{const n=a.filter(x=>x.m.card<0);return n.length?n:a};
+function strongPick(ms,s,p=S.turn,c=codes()){
+  const sc=ms.map(m=>{const i=s.map.get(L.childKey(m,p,c[0],c[1]));return i===undefined?{m,v:0,d:0}:{m,v:-s.val[i],d:s.dep[i]}});
+  const w=sc.filter(x=>x.v===1);
+  if(w.length){const md=Math.min(...w.map(x=>x.d));return pick(preferNoCard(w.filter(x=>x.d===md))).m}
+  const d=sc.filter(x=>x.v===0);
+  if(d.length)return pick(preferNoCard(d)).m;
+  const md=Math.max(...sc.map(x=>x.d));return pick(preferNoCard(sc.filter(x=>x.d===md))).m;
+}
+async function cpuChooseBase(){
+  const ms=allMoves(),p=S.turn;
+  const winNow=ms.filter(m=>L.dead(m.res[1-p]));
+  const noCardFirst=a=>{const n=a.filter(m=>m.card<0);return n.length?n:a};
+  if(S.level==='strong'){const s=await ensureSolver();return strongPick(ms,s)}
+  if(S.level==='weak'){
+    if(winNow.length&&Math.random()<.5)return pick(winNow);
+    const nc=ms.filter(m=>m.card<0),wc=ms.filter(m=>m.card>=0);
+    return pick(wc.length&&(Math.random()<.12||!nc.length)?wc:nc);
+  }
+  if(winNow.length)return pick(noCardFirst(winNow));
+  if(Math.random()<.3&&sol&&sol.map.has(stateKey()))return strongPick(ms,sol);
+  const opCards=L.list2cnt(S.cards[1-p]);
+  const myCards=L.list2cnt(S.cards[p]);
+  const safe=ms.filter(m=>!L.genAll(m.res,1-p,m.nfx,opCards,S.rules,myCards).some(x=>L.dead(x.res[p])));
+  const pool=safe.length?safe:ms,nc=pool.filter(m=>m.card<0),wc=pool.filter(m=>m.card>=0);
+  return pick(wc.length&&(Math.random()<.2||!nc.length)?wc:nc);
+}
+
+async function cpuChoose(){
+  const m=await cpuChooseBase(),p=S.turn,mine=S.cards[p],opp=S.cards[1-p];
+  if(m.card>=0)return m;
+  const add=t=>Object.assign({},m,{card:t,oc:-1,cancel:false}); // 透視・攪乱 are never cancelled
+  let losing=false;
+  if(sol&&sol.map.has(stateKey()))losing=sol.val[sol.map.get(stateKey())]===-1;
+  const lv=S.level;
+  if(mine.includes(L.SHUF)&&(losing?(lv!=='weak'||Math.random()<.3):Math.random()<(lv==='weak'?.08:0)))return add(L.SHUF);
+  if(mine.includes(L.PEEK)&&Math.random()<(lv==='weak'?.1:.03))return add(L.PEEK);
+  return m;
+}
+
+/* ---------- text ---------- */
+function describe(before,p,a,card,fx,second,cancel){
+  const q=1-p,n=L.applyAct(before,p,a,fx);
+  const tag=card>=0?`<span class="tag" style="color:var(--k${card})">【${CARDS[card].name}${cancel?'→見切り':''}】</span>`:second?`<span class="tag" style="color:var(--k3)">【連撃2回目】</span>`:'';
+  let s;
+  if(a.t==='pass')s=`<b>${nm(p)}</b>の入れ替えは、${nm(q)}の見切りで不発`;
+  else if(a.t==='split')s=`<b>${nm(p)}</b>が分身：左${before[p][0]}・右${before[p][1]} → 左${n[p][0]}・右${n[p][1]}`;
+  else if(a.t==='swap')s=`<b>${nm(p)}</b>の${SIDE[a.from]}(${before[p][a.from]})と${nm(q)}の${SIDE[a.to]}(${before[q][a.to]})を入れ替え`;
+  else{
+    const tp=a.t==='atk'?q:p,pw=L.power(before,p,a,fx),after=n[tp][a.to];
+    const res=a.t==='atk'&&fx===2?'盾で無効！':after===0?'消えた！':`${after}本`;
+    const pwTxt=pw!==before[p][a.from]?`${before[p][a.from]}→${pw}`:`${pw}`;
+    s=a.t==='self'?`<b>${nm(p)}</b>が自分の${SIDE[a.to]}を攻撃(${pwTxt})：${res}`
+                  :`<b>${nm(p)}</b>の${SIDE[a.from]}(${pwTxt}) → ${nm(q)}の${SIDE[a.to]}：${res}`;
+  }
+  if(cancel&&a.t!=='pass')s+=` ／${nm(q)}の見切りでカードの効果は打ち消された`;
+  else if(!cancel){
+    if(card===1)s+=` ／次の${nm(q)}の攻撃は−1`;
+    if(card===2)s+=` ／次の${nm(q)}の攻撃は無効`;
+    if(card===L.PEEK)s+=` ／${nm(p)}は次の番まで${nm(q)}の手札が見える`;
+    if(card===L.SHUF)s+=` ／お互いの手札がシャッフルされた`;
+  }
+  return tag+s;
+}
+
+// short description of a whole turn, for hints and the review
+// with h (the board before the turn) every hand is followed by its finger count, e.g. 右手（２）
+const zen=n=>String(n).replace(/[0-9]/g,d=>String.fromCharCode(0xFF10+ +d));
+function moveText(m,p,h,fx){
+  const q=1-p;let cur=h;
+  const H=(who,i)=>cur?`<span class="nw">${SIDE[i]}（${zen(cur[who][i])}）</span>`:SIDE[i];
+  const parts=m.acts.map(a=>{
+    let s;
+    if(a.t==='pass')s='入れ替え（不発）';
+    else if(a.t==='split')s=cur?`分身（左${zen(cur[p][0])}・右${zen(cur[p][1])} → 左${zen(a.v[0])}・右${zen(a.v[1])}）`:`分身（左${a.v[0]}・右${a.v[1]}）`;
+    else if(a.t==='swap')s=`${H(p,a.from)}と${nm(q)}の${H(q,a.to)}を入れ替え`;
+    else if(a.t==='self')s=`${H(p,a.from)}で自分の${H(p,a.to)}を攻撃`;
+    else s=`${H(p,a.from)}で${nm(q)}の${H(q,a.to)}を攻撃`;
+    if(cur)cur=L.applyAct(cur,p,a,fx||0);
+    return s;
+  });
+  return (m.card>=0?`【${CARDS[m.card].name}】`:'')+parts.join(' → 続けて ');
+}
+const keyOf=(hands,turn,fx,cards)=>L.enc(hands,turn,fx,L.cnt2code(L.list2cnt(cards[0])),L.cnt2code(L.list2cnt(cards[1])));
+
+/* ---------- drawing ---------- */
+function handSVG(n){
+  const F=[{x:28,w:17,l:58},{x:48,w:18,l:66},{x:69,w:17,l:60},{x:89,w:15,l:46}];
+  let up='',knuck='';
+  F.forEach((f,i)=>{
+    if(i<n){const y=74-f.l;up+=`<rect class="f" x="${f.x}" y="${y}" width="${f.w}" height="${f.l+16}" rx="${f.w/2}"/><rect class="nail" x="${f.x+4}" y="${y+4}" width="${f.w-8}" height="9" rx="4"/>`}
+    else knuck+=`<rect class="f" x="${f.x}" y="60" width="${f.w}" height="24" rx="${f.w/2}"/>`;
+  });
+  const thumb=n>=5?`<rect class="f" x="2" y="80" width="34" height="17" rx="8.5" transform="rotate(-38 30 90)"/>`:`<rect class="f" x="24" y="98" width="50" height="18" rx="9"/>`;
+  return `<svg viewBox="0 0 120 150" aria-hidden="true"><rect class="f" x="38" y="124" width="52" height="24" rx="6"/>${up}<rect class="f" x="22" y="70" width="86" height="62" rx="22"/>${knuck}${thumb}</svg>`;
+}
+const mirror=svg=>svg.replace('<svg ','<svg style="scale:-1 1" ');
+// the 3D hand image for n fingers (wristband colour = player), or the flat drawing until it is ready
+function handArt(n,p,mir){
+  const src=HAND3D.get(n,p);
+  if(src)return `<img class="h3d" src="${src}" alt="" draggable="false"${mir?' style="scale:-1 1"':''}>`;
+  const svg=handSVG(n);return mir?mirror(svg):svg;
+}
+// on the board: the hand plus its sleeved arm reaching back to the player's edge of the screen
+function limbArt(n,p,mir){
+  const hand=HAND3D.get(n,p),arm=HAND3D.get('arm',p);
+  if(!hand||!arm)return handArt(n,p,mir);
+  return `<span class="limb"${mir?' style="scale:-1 1"':''}><img class="h3d" src="${hand}" alt="" draggable="false"><img class="arm" src="${arm}" alt="" draggable="false"></span>`;
+}
+function renderKnees(){
+  const show=S.phase==='play'||S.phase==='over';
+  [['kneesB',bottom()],['kneesT',1-bottom()]].forEach(([id,p])=>{
+    const el=$(id),src=HAND3D.get('knee',p);
+    el.hidden=!(show&&src);
+    if(src&&el.dataset.p!==String(p)){el.innerHTML=`<img src="${src}" alt="" draggable="false">`;el.dataset.p=p}
+  });
+}
+const cardFace=t=>`<span class="g">${CARDS[t].g}</span><span class="n">${CARDS[t].name}</span>`;
+
+/* ---------- rendering ---------- */
+const $=id=>document.getElementById(id);
+const canAct=()=>S.phase==='play'&&!busy&&!thinking&&!S.handoff&&isHuman(S.turn);
+const selfAllowed=at=>S.rules.self&&at!==0&&at!==4;
+function validOpp(j){const at=armedType(),me=S.hands[S.turn],op=S.hands[1-S.turn];return op[j]>0&&(at!==4||op[j]!==me[S.sel])}
+function cardUsable(t){return t===L.MIKIRI?false:t===0||t===4?L.cardActs(S.hands,S.turn,t).length>0:true}
+// slot 0 = bottom of the screen, slot 1 = top
+function renderZone(slot){
+  const p=slot===0?bottom():1-bottom();
+  const z=$('zone'+slot),act=canAct(),order=slot===0?[0,1]:[1,0],me=S.hands[S.turn],at=armedType(),hint=currentHint();
+  let hands='';
+  for(const i of order){
+    const v=S.hands[p][i],cls=['hand'];
+    const selectable=act&&p===S.turn&&v>0;
+    const tgt=act&&S.sel!==null&&v>0&&(p!==S.turn?validOpp(i):(i!==S.sel&&selfAllowed(at)&&me[S.sel]>0));
+    if(v===0)cls.push('dead');
+    if(act&&p===S.turn&&S.sel===i)cls.push('sel');
+    if(tgt)cls.push('tgt');
+    let pv='';
+    if(tgt){
+      const a=p!==S.turn?(at===4?{t:'swap',from:S.sel,to:i}:{t:'atk',from:S.sel,to:i,bonus:at===0?1:0}):{t:'self',from:S.sel,to:i};
+      pv=previewLabel(a,at);
+    }
+    if(hint&&act){
+      const a1=hint.m.acts[0];
+      if(p===S.turn&&a1.t!=='split'&&a1.from===i)cls.push('hintf');
+      if(a1.t!=='split'&&a1.to===i&&((a1.t==='self')===(p===S.turn)))cls.push('hintt');
+    }
+    const svg=limbArt(v,p,i===0);
+    hands+=`<button type="button" class="${cls.join(' ')}" id="hand-${p}-${i}" data-p="${p}" data-i="${i}" ${selectable||tgt?'':'disabled'} aria-label="${nm(p)}の${SIDE[i]} ${v}本${tgt?'（対象）':''}">${svg}<span class="num">${v}</span>${pv}<span class="side">${SIDE[i]}</span></button>`;
+  }
+  const sub=S.mode==='cpu'&&p===1?`<small>${LV[S.level]}</small>`:'';
+  let bar=`<div class="who"><i></i>${nm(p)}${sub}</div>`;
+  if(S.phase==='play'||S.phase==='over'){
+    if(S.fx===1&&S.turn===p)bar+=`<span class="badge b1"><span class="lg">弱体：</span>攻撃−1</span>`;
+    if(S.fx===2&&S.turn!==p)bar+=`<span class="badge b2">盾<span class="lg">：攻撃を無効</span></span>`;
+    if(S.pend===1&&S.turn!==p)bar+=`<span class="badge b1"><span class="lg">次の番：</span>攻撃−1</span>`;
+    if(S.pend===2&&S.turn===p)bar+=`<span class="badge b2"><span class="lg">次の番：</span>盾</span>`;
+    if(S.phase==='play'&&S.peek&&S.peek[p]&&!(S.mode==='cpu'&&p===1))bar+=`<span class="badge b6">透視<span class="lg">：${S.peek[p]===1&&S.turn===p?'この番まで':'次の番まで'}</span></span>`;
+  }
+  if(S.cardsOn&&(S.phase==='play'||S.phase==='over')){
+    const cu=act&&p===S.turn&&!S.usedCard&&S.acts===0;
+    const list=S.cards[p];
+    const gotK=S.got&&S.got[p]!=null?list.indexOf(S.got[p]):-1;
+    const hintK=hint&&act&&p===S.turn&&hint.m.card>=0?list.indexOf(hint.m.card):-1;
+    let cs='';
+    list.forEach((t,k)=>{
+      const fl=flash&&flash.p===p&&flash.k===k?' flash':'';
+      if(hidden(p)){cs+=`<button type="button" class="card back${fl}" disabled aria-label="伏せられたカード"><span class="g">?</span><span class="n">技カード</span></button>`;return}
+      const ok=cu&&cardUsable(t),arm=cu&&S.armed===k;
+      const off=p===S.turn&&act&&!ok;
+      cs+=`<button type="button" class="card t${t}${arm?' armed':''}${off&&t!==L.MIKIRI?' off':''}${t===L.MIKIRI?' passive':''}${fl}${k===gotK?' got':''}${k===hintK?' hintc':''}" data-p="${p}" data-card="${k}" ${ok?'':'disabled'} aria-label="${CARDS[t].name}：${CARDS[t].desc}" aria-pressed="${arm}">${cardFace(t)}</button>`;
+    });
+    bar+=list.length?`<div class="cards">${cs}</div>`:`<span class="nocard">手札なし</span>`;
+  }
+  z.innerHTML=slot===1?`<div class="bar">${bar}</div><div class="hands">${hands}</div>`:`<div class="hands">${hands}</div><div class="bar">${bar}</div>`;
+  z.className=`zone ${slot?'top':'bottom'} c${p}`+(S.phase==='play'&&S.turn===p?' active':'');
+}
+// what an action would do, shown on the target hand before tapping it
+function previewLabel(a,at){
+  const p=S.turn,q=1-p,seenMk=L.reacts(at)&&!hidden(q)&&S.cards[q].includes(L.MIKIRI);
+  if(seenMk)a=L.plain(a);
+  const n=L.applyAct(S.hands,p,a,S.fx);
+  if(a.t==='pass')return `<span class="pv dim">見切りで不発</span>`;
+  let txt,cls='';
+  if(L.dead(n[q])){txt='勝ち！';cls=' hot'}
+  else if(a.t==='swap')txt=`⇄ 交換で${S.hands[p][a.from]}本に`;
+  else if(a.t==='atk'&&S.fx===2){txt='盾で無効';cls=' dim'}
+  else{const v=n[a.t==='atk'?q:p][a.to];if(v===0){txt='消える！';cls=' hot'}else txt=`→ ${v}本`}
+  if(!L.dead(n[q])&&leadsToDraw(n,at)){txt+='（引き分け）';cls=' warn'}
+  if(seenMk)txt='見切り：'+txt;
+  return `<span class="pv${cls}">${txt}</span>`;
+}
+// would ending the turn here make this position appear a third time?
+function leadsToDraw(res,at){
+  const q=1-S.turn,mk=L.reacts(at)&&S.cards[q].includes(L.MIKIRI);
+  if(mk&&hidden(q))return false;     // would give the hidden 見切り away
+  if(at===3&&!mk)return false;      // 連撃: the turn goes on (unless 見切り cancels it)
+  if(at===L.SHUF)return false;      // the reshuffle makes a new position
+  const c=codes(),key=L.childKey({card:at,res,nfx:mk?0:at===1?1:at===2?2:0,oc:mk?L.MIKIRI:-1},S.turn,c[0],c[1]);
+  return (S.seen[key]||0)>=2;
+}
+function currentHint(){return S.hint&&S.acts===0&&S.hint.key===stateKey()?S.hint:null}
+async function askHint(){
+  if(!canAct()||S.acts>0||hintBusy)return;
+  hintMidH=document.querySelector('.mid').offsetHeight; // the hint is shown inside this same height
+  hintBusy=true;render();
+  const key=stateKey(),g=gen;
+  const s=await ensureSolver();
+  hintBusy=false;
+  if(g!==gen||key!==stateKey()||!canAct()){render();return}
+  const i=s.map.get(key),v=i===undefined?0:s.val[i],d=i===undefined?0:s.dep[i];
+  const m=strongPick(allMoves(false),s);
+  let ev;
+  if(v===1)ev=`<b style="color:var(--good)">勝ち筋あり</b>（${Math.ceil(d/2)}手番以内に勝てる）`;
+  else if(v===-1)ev=`<b style="color:var(--red)">不利</b>（相手が最善なら負け）`;
+  else ev=`<b>互角</b>（最善同士なら引き分け）`;
+  if(!S.hint||S.hint.key!==key)S.hintsUsed++;
+  S.hint={key,m,ev,text:moveText(m,S.turn)};
+  render();
+}
+function renderMid(){
+  const t=$('turn'),a=$('actions');
+  lockMid(false);
+  $('last').innerHTML=S.last||'';
+  a.innerHTML='';
+  if(S.phase!=='play'&&S.phase!=='over'){t.innerHTML='じゃんけんで先攻を決めよう';return}
+  if(S.phase==='over'){
+    t.innerHTML=S.result.draw?'引き分け':`<mark>${nm(S.result.winner)}</mark>の勝ち`;
+    a.innerHTML=`<button class="chip" type="button" id="againMid">もう一回</button>`;
+    return;
+  }
+  if(thinking){t.innerHTML='CPUが考え中…';return}
+  t.innerHTML=`<mark>${nm(S.turn)}</mark>の番`;
+  if(!canAct())return;
+  const me=S.hands[S.turn],at=armedType(),color=S.turn===1?' red':'',hint=currentHint();
+  let html='';
+  if((S.seen[stateKey()]||0)>=2&&S.acts===0)html+=`<span class="hint warn">⚠ この局面は2回目です。もう一度同じ局面になると引き分けになります</span><span class="brk"></span>`;
+
+  if(S.ren&&S.acts===1){
+    html+=`<span class="hint"><b style="color:var(--k3)">連撃</b>：もう1回行動できます</span><button class="chip${color}" type="button" id="endRen">ここで終える</button><span class="brk"></span>`;
+  }else if(at>=0){
+    html+=`<span class="hint"><b style="color:var(--k${at})">${CARDS[at].name}</b>：${CARDS[at].how}（カードをもう一度タップで取り消し）</span><span class="brk"></span>`;
+  }
+  if(hint){t.innerHTML='';$('last').innerHTML=`<span class="hintline"><b>ヒント</b> ${hint.ev}　おすすめ：<b>${hint.text}</b></span>`}
+  if(hint&&at<0&&!(S.ren&&S.acts===1)){/* the hint replaces the how-to line */}
+  else if(at!==0&&at!==4){
+    let hint;
+    if(S.sel===null)hint='自分の手をタップして選ぼう';
+    else hint=selfAllowed(at)&&me[0]>0&&me[1]>0?'相手の手か、自分のもう片方の手をタップ（もう一度タップで解除）':'攻撃する相手の手をタップ';
+    if(at<0||S.sel!==null)html+=`<span class="hint">${hint}</span>`;
+  }else if(S.sel===null)html+=`<span class="hint">まず自分の手をタップ</span>`;
+  const splits=at===0||at===4?[]:L.baseActs(S.hands,S.turn,S.rules).filter(x=>x.t==='split');
+  if(splits.length){
+    const hs=hint&&hint.m.acts[0].t==='split'?hint.m.acts[0].v.join(','):null;
+    html+=`<span class="brk"></span><span class="hint">分身する：</span>`+splits.map((m,k)=>{
+      const dr=leadsToDraw(L.applyAct(S.hands,S.turn,m,S.fx),at);
+      return `<button type="button" class="chip${color}${hs===m.v.join(',')?' hintc':''}${dr?' warnchip':''}" data-split="${k}"><small>左</small>${m.v[0]}<small>右</small>${m.v[1]}${dr?'<small>（引き分け）</small>':''}</button>`}).join('');
+  }
+  if(S.acts===0)html+=`<button class="chip ghostchip" type="button" id="hintBtn" ${hintBusy?'disabled':''}>${hintBusy?'考えています…':hint?'ヒントを隠す':'ヒント'}</button>`;
+  a.innerHTML=html;
+  a.querySelectorAll('[data-split]').forEach(b=>b.onclick=()=>runHuman(splits[+b.dataset.split]));
+  const er=$('endRen');if(er)er.onclick=()=>{if(canAct())endTurn()};
+  const hb=$('hintBtn');if(hb)hb.onclick=()=>{if(currentHint()){S.hint=null;render()}else askHint()};
+  lockMid(!!hint);
+}
+// while a hint is up, the middle panel keeps the height it had, so the hands below never move
+function lockMid(on){
+  const mid=document.querySelector('.mid');
+  mid.classList.toggle('hinting',on);
+  if(on&&hintMidH){
+    mid.style.height=hintMidH+'px';
+    // never let the hint and the button overlap: grow only by what the content really needs
+    if(mid.scrollHeight>mid.clientHeight+1)mid.style.height=(hintMidH+mid.scrollHeight-mid.clientHeight)+'px';
+  }else mid.style.height='';
+}
+function renderOverlays(){
+  $('ovTitle').hidden=S.phase!=='title';
+  $('ovSetup').hidden=S.phase!=='setup';
+  $('ovJanken').hidden=S.phase!=='janken';
+  $('ovTrade').hidden=S.phase!=='trade';
+  $('ovReview').hidden=!S.reviewOpen;
+  $('ovResult').hidden=!(S.phase==='over'&&S.result&&S.result.show);
+  $('ovRules').hidden=!S.rulesOpen;
+  $('ovSound').hidden=!S.soundOpen;
+  $('ovAbout').hidden=!S.aboutOpen;
+  $('ovHand').hidden=!(S.handoff&&!handDelay&&S.phase==='play');
+  if(!$('ovHand').hidden)renderHandoff();
+  $('setupClose').hidden=!S.setupFromGame;
+  if(S.phase==='janken')renderJanken();
+  if(S.phase==='trade')renderTrade();
+  if(S.reviewOpen)renderReview();
+  if(!$('ovResult').hidden)renderResult();
+}
+function musicFor(){
+  if(S.phase==='play'||S.phase==='trade'||(S.phase==='setup'&&S.setupFromGame))return 'battle';
+  if(S.phase==='over')return 'none';
+  return 'title';
+}
+function render(){
+  SND.music(musicFor());
+  renderZone(1);renderZone(0);renderKnees();renderMid();renderOverlays();
+  $('modeLabel').textContent=(S.mode==='cpu'?`CPU対戦・${LV[S.level]}`:'ふたりで対戦')+(S.cardsOn?'・技カード':'');
+  $('btnUndo').disabled=!undoable();
+  const again=$('againMid');
+  if(again)again.onclick=()=>{S.phase='janken';S.jk=null;render()};
+}
+function syncSetupVis(){
+  const cpu=S.mode==='cpu';
+  $('levelBox').hidden=!cpu;
+  $('hideBox').hidden=!cpu||!$('ruleCards').checked;
+  $('passBox').hidden=S.mode!=='pvp';
+  $('setupTitle').textContent=cpu?'CPUと対戦':'ふたりで対戦';
+  $('setupLead').textContent=cpu?'CPUの強さとルールを選んでください。':'ルールと遊び方を選んでください。';
+}
+
+/* ---------- janken ---------- */
+const JK=[{n:0,t:'グー'},{n:2,t:'チョキ'},{n:5,t:'パー'}];
+function renderJanken(){
+  const b=$('jankenBody');
+  if(S.mode==='pvp'){
+    b.innerHTML=`<h2>じゃんけん</h2><p>実際にじゃんけんをして、勝った人を選んでください。</p>
+    <div class="row"><button class="primary" data-first="0">プレイヤー1<br><small>（下・青）</small></button><button class="primary" data-first="1" style="background:var(--red)">プレイヤー2<br><small>（上・赤）</small></button></div>
+    <button class="ghost" data-first="r">ランダムで決める</button>`;
+    b.querySelectorAll('[data-first]').forEach(x=>x.onclick=()=>startGame(x.dataset.first==='r'?(Math.random()<.5?0:1):+x.dataset.first));
+    return;
+  }
+  const jk=S.jk;
+  let html=`<h2>じゃんけんで先攻後攻を決める</h2>`;
+  if(jk){
+    html+=`<div class="vs"><div class="me">${handArt(JK[jk.me].n,0,false)}あなた・${JK[jk.me].t}</div>VS<div class="cpu">${handArt(JK[jk.cpu].n,1,true)}CPU・${JK[jk.cpu].t}</div></div>`;
+    if(jk.res===0)html+=`<div class="jkmsg">あいこ！もう一回</div>`;
+    else html+=`<div class="jkmsg">${jk.res>0?'勝ち！あなたが先攻です':'負け…CPUが先攻です'}</div><button class="primary" id="jkGo">対戦スタート</button>`;
+  }
+  if(!jk||jk.res===0){
+    html+=`<div class="jk">${JK.map((j,k)=>`<button type="button" data-jk="${k}">${handArt(j.n,0,false)}${j.t}</button>`).join('')}</div>`;
+    if(!jk)html+=`<p class="center">出す手を選んでね</p>`;
+  }
+  b.innerHTML=html;
+  b.querySelectorAll('[data-jk]').forEach(x=>x.onclick=()=>{
+    const me=+x.dataset.jk,cpu=Math.floor(Math.random()*3),d=(me-cpu+3)%3;
+    S.jk={me,cpu,res:d===0?0:(d===2?1:-1)};render();
+  });
+  const go=$('jkGo');if(go)go.onclick=()=>startGame(S.jk.res>0?0:1);
+}
+
+/* ---------- hand-over screen (pass-and-play) ---------- */
+function renderHandoff(){
+  const p=S.turn,col=p===0?'var(--blue)':'var(--red)';
+  $('handBody').innerHTML=`<h2 style="color:${col}">${nm(p)}の番です</h2>
+    <p>端末を<b>${nm(p)}</b>に渡してください。${nm(1-p)}は画面を見ないでね。</p>
+    ${S.last?`<p class="status">直前の手：${S.last}</p>`:''}
+    <button class="primary" type="button" id="handGo" style="background:${col}">${nm(p)}が受け取った</button>`;
+  $('handGo').onclick=()=>{S.view=S.turn;S.handoff=false;autoSel();render()};
+}
+
+/* ---------- card trade before the game (second player is dealt 4) ---------- */
+function cpuTradePick(p){
+  const mine=S.cards[p],opp=S.cards[1-p],V={3:5,1:4,2:3.6,4:2.2,0:1.6};
+  const val=t=>V[t]+(t===0&&opp.includes(3)?3:0)-(mine.filter(z=>z===t).length>1?1:0);
+  return mine.slice().sort((x,y)=>val(x)-val(y))[0];
+}
+function tradeNext(){
+  const T=S.trade;
+  for(const p of [T.second,T.first]){
+    if(T.picks[p]!==undefined)continue;
+    if(!isHuman(p)){T.picks[p]=cpuTradePick(p);continue}
+    T.who=p;T.sel=null;T.step=passMode()?'hand':'pick';return;
+  }
+  const a=T.picks[T.first],b=T.picks[T.second],cf=S.cards[T.first],cs=S.cards[T.second];
+  cf.splice(cf.indexOf(a),1);cs.splice(cs.indexOf(b),1);cf.push(b);cs.push(a);cf.sort();cs.sort();
+  S.got=[null,null];S.got[T.first]=b;S.got[T.second]=a;
+  T.step='done';
+}
+const cardRow=t=>`<span class="card t${t}" aria-hidden="true">${cardFace(t)}</span><span><b style="color:var(--k${t})">${CARDS[t].name}</b>${CARDS[t].desc}</span>`;
+function renderTrade(){
+  const T=S.trade,b=$('tradeBody');if(!T)return;
+  const role=p=>p===T.first?'先攻':'後攻',col=p=>p===0?'var(--blue)':'var(--red)';
+  if(T.step==='hand'){
+    b.innerHTML=`<h2 style="color:${col(T.who)}">カード交換：${nm(T.who)}</h2>
+      <p>端末を<b>${nm(T.who)}（${role(T.who)}）</b>に渡してください。${nm(1-T.who)}は画面を見ないでね。</p>
+      <button class="primary" type="button" id="trGo" style="background:${col(T.who)}">${nm(T.who)}が受け取った</button>`;
+    $('trGo').onclick=()=>{T.step='pick';render()};
+  }else if(T.step==='pick'){
+    const list=S.cards[T.who],who=S.mode==='cpu'?'あなた':nm(T.who);
+    b.innerHTML=`<h2>カード交換</h2>
+      <p>${who}は<b>${role(T.who)}</b>です。先攻に3枚、後攻に4枚配りました。相手に渡すカードを1枚選んでください。${T.who===T.first?'':'後攻から先に選びます。'}相手も1枚選んで渡してきます。</p>
+      <div class="tlist">${list.map((t,k)=>`<button type="button" class="topt${T.sel===k?' on':''}" data-k="${k}" aria-pressed="${T.sel===k}">${cardRow(t)}</button>`).join('')}</div>
+      <button class="primary" type="button" id="trPick" ${T.sel===null?'disabled':''}>このカードを渡す</button>`;
+    b.querySelectorAll('[data-k]').forEach(x=>x.onclick=()=>{T.sel=+x.dataset.k;render()});
+    $('trPick').onclick=()=>{if(T.sel===null)return;T.picks[T.who]=list[T.sel];tradeNext();render()};
+  }else{
+    const line=p=>`<div class="tsum"><div class="lbl">${nm(p)}（${role(p)}）</div><div class="tpair"><span>渡した</span>${cardRow(T.picks[p])}</div><div class="tpair"><span>受け取った</span>${cardRow(T.picks[1-p])}</div></div>`;
+    let body;
+    if(S.mode==='cpu')body=line(0);
+    else if(passMode())body=line(T.first)+`<p class="note2">${nm(T.second)}は、自分の番に受け取ったカード（「受取」の印）を確認できます。</p>`;
+    else body=line(T.first)+line(T.second);
+    b.innerHTML=`<h2>交換しました</h2>${body}<button class="primary" type="button" id="trStart">対戦スタート</button>`;
+    $('trStart').onclick=()=>{const f=T.first;S.trade=null;beginPlay(f,true)};
+  }
+}
+/* ---------- review after the game ---------- */
+async function openReview(){
+  S.reviewOpen=true;
+  if(!S.review){
+    S.review={loading:true};render();
+    const g=gen;let r;
+    try{r=await analyse()}catch(e){r={error:true}}
+    if(g!==gen)return;
+    S.review=r;
+  }
+  render();
+}
+// look a position up in any solve done so far, solving from it when none covers it (e.g. after 攪乱)
+const reviewSolves=[];
+async function solveCovering(key){
+  for(const s of [sol,...reviewSolves])if(s&&s.map.has(key))return s;
+  const s=await solveAsync(key,S.rules);reviewSolves.push(s);return s;
+}
+function ensureReviewSolver(){
+  if(!S.log.length)return Promise.resolve(null);
+  const e=S.log[0],root=keyOf(e.pre.hands,e.p,e.pre.fx,e.pre.cards);
+  if(sol&&sol.map.has(root))return Promise.resolve(sol);
+  return solveAsync(root,S.rules).then(x=>(sol=x));
+}
+// the position before a turn, written out so it can be pictured
+function boardText(h,p,fx){
+  const q=1-p,side=w=>`<div>${nm(w)}：<span class="nw">左手（${zen(h[w][0])}）</span>・<span class="nw">右手（${zen(h[w][1])}）</span></div>`;
+  return side(p)+side(q)+(fx===1?`<div>※${nm(p)}の攻撃は−1</div>`:fx===2?`<div>※${nm(q)}の盾が有効</div>`:'');
+}
+async function analyse(){
+  if(!S.log.length)return {items:[],dots:[]};
+  const val=async k=>{const s=await solveCovering(k);return s.val[s.map.get(k)]};
+  const items=[],dots=[];
+  const e0=S.log[0];const v0=await val(keyOf(e0.pre.hands,e0.p,e0.pre.fx,e0.pre.cards));dots.push(e0.p===0?v0:-v0);
+  for(let idx=0;idx<S.log.length;idx++){
+    const e=S.log[idx];
+    const preKey=keyOf(e.pre.hands,e.p,e.pre.fx,e.pre.cards),vPre=await val(preKey),vPost=-(await val(e.post));
+    dots.push(e.p===0?vPost:-vPost);
+    if(e.card===L.SHUF)continue; // a reshuffle is luck, not a misplay
+    if((S.mode==='pvp'||e.p===0)&&vPost<vPre){
+      const s=await solveCovering(preKey);
+      const c=[L.cnt2code(L.list2cnt(e.pre.cards[0])),L.cnt2code(L.list2cnt(e.pre.cards[1]))];
+      const best=strongPick(L.genAll(e.pre.hands,e.p,e.pre.fx,L.list2cnt(e.pre.cards[e.p]),S.rules,L.list2cnt(e.pre.cards[1-e.p]),false),s,e.p,c);
+      items.push({n:idx+1,p:e.p,kind:vPre===1?(vPost===0?'勝ちを逃し、互角になった手':'勝ちから負けの形勢に変わった手'):'負けの形勢に変わった手（敗着）',board:boardText(e.pre.hands,e.p,e.pre.fx),played:moveText({card:e.card,acts:e.acts},e.p,e.pre.hands,e.pre.fx),best:moveText(best,e.p,e.pre.hands,e.pre.fx)});
+    }
+  }
+  return {items,dots};
+}
+function renderReview(){
+  const R=S.review,b=$('reviewBody');
+  if(!R||R.loading){b.innerHTML=`<h2>振り返り</h2><p class="status"><b>局面を読み切っています…</b></p>`;return}
+  if(R.error){b.innerHTML=`<h2>振り返り</h2><p class="status">振り返りを作れませんでした。</p><button class="primary" type="button" id="rvClose">閉じる</button>`;$('rvClose').onclick=()=>{S.reviewOpen=false;render()};return}
+  const who=S.mode==='cpu'?'あなた':'プレイヤー1';
+  const dot=v=>`<i class="dot ${v>0?'g':v<0?'b':'n'}"></i>`;
+  const list=R.items.length?R.items.map(it=>`<li><div class="rvhead">第${it.n}手番　${nm(it.p)}の番</div>${it.board?`<div class="rvboard"><div class="lbl">この時の盤面</div>${it.board}</div>`:''}<div>指した手：${it.played}</div><div class="rvkind">${it.kind}</div><div class="rvbest">おすすめだった手：<b>${it.best}</b></div></li>`).join('')
+    :S.mode==='cpu'&&R.dots[0]<0?`<li class="rvok">対局が始まった時点で、すでに不利な形勢でした。そこからの悪手はありません。</li>`
+    :`<li class="rvok">最善を外した手はありませんでした。見事です！</li>`;
+  b.innerHTML=`<h2>振り返り</h2>
+    <div><div class="lbl">形勢の推移（${who}から見て）</div><div class="dots" role="img" aria-label="形勢の推移">${R.dots.map(dot).join('')}</div>
+    <div class="legend"><span>${dot(1)}勝ち筋あり</span><span>${dot(0)}互角</span><span>${dot(-1)}不利</span></div></div>
+    <div><div class="lbl">形勢を落とした手</div><ol class="rvlist">${list}</ol></div>
+    ${S.mode==='cpu'?`<p class="note2">ヒントを使った回数：${S.hintsUsed}回</p>`:''}
+    <button class="primary" type="button" id="rvClose">閉じる</button>`;
+  $('rvClose').onclick=()=>{S.reviewOpen=false;render()};
+}
+
+/* ---------- result ---------- */
+function renderResult(){
+  const r=S.result,b=$('resultBody'),n=S.hist.length;
+  let head;
+  if(r.draw)head=`<p class="big">引き分け</p><p class="center">同じ局面が3回くり返されました</p>`;
+  else if(S.mode==='pvp')head=`<p class="big ${r.winner===0?'win':'lose'}">${nm(r.winner)}の勝ち！</p>`;
+  else head=r.winner===0?`<p class="big win">あなたの勝ち！</p>`:`<p class="big lose">${nm(1)}の勝ち…</p>`;
+  head+=`<p class="center">${n}手番で決着</p>`;
+  b.innerHTML=`${head}
+    <div class="row"><button class="ghost" id="rsBoard">盤面を見る</button><button class="primary" id="rsAgain">もう一回</button></div>
+    <button class="ghost" id="rsReview" ${S.log.length?'':'disabled'}>振り返り（形勢と悪手の確認）</button>
+    <div class="row"><button class="ghost" id="rsSetup">設定を変える</button><button class="ghost" id="rsTitle">タイトルへ</button></div>`;
+  $('rsReview').onclick=openReview;
+  $('rsBoard').onclick=()=>{S.result.show=false;render()};
+  $('rsAgain').onclick=()=>{S.phase='janken';S.jk=null;render()};
+  $('rsSetup').onclick=()=>openSetup(false);
+  $('rsTitle').onclick=goTitle;
+}
+
+/* ---------- flow ---------- */
+function autoSel(){
+  S.sel=null;
+  if(S.phase==='play'&&isHuman(S.turn)){
+    const me=S.hands[S.turn],live=[0,1].filter(i=>me[i]>0);
+    if(live.length===1)S.sel=live[0];
+  }
+}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function resetBoard(first){
+  S.hands=[[1,1],[1,1]];S.turn=first;S.fx=0;S.pend=0;S.acts=0;S.ren=false;S.usedCard=false;S.armed=null;S.rec='';
+  S.hist=[];S.seen={};S.seen[stateKey()]=1;S.result=null;
+  S.log=[];S.cur=null;S.hint=null;S.hintsUsed=0;S.review=null;S.reviewOpen=false;reviewSolves.length=0;
+}
+function startGame(first){
+  gen++;thinking=false;busy=false;
+  S.jk=null;S.setupFromGame=false;S.got=[null,null];
+  if(S.cardsOn){
+    const deck=shuffle([0,0,1,1,2,2,3,4,4,5,5,6,6,7,7]); // 連撃 is the only single copy
+    S.cards=[deck.slice(0,5).sort(),deck.slice(5,10).sort()];
+  }else S.cards=[[],[]];
+  S.trade=null;beginPlay(first,false);
+}
+function beginPlay(first,traded){
+  gen++;
+  resetBoard(first);
+  S.last=`${nm(first)}が先攻`+(S.cardsOn?'・技カードを5枚ずつ配りました':'');
+  S.peek=[false,false];S.seed=Math.floor(Math.random()*2147483646)+1;
+  S.phase='play';
+  S.view=first;S.handoff=passMode()&&!traded;handDelay=false;
+  sol=null;solJob=null;
+  ensureSolver();
+  autoSel();render();scheduleCpu();
+}
+function scheduleCpu(){
+  if(S.mode!=='cpu'||S.phase!=='play'||isHuman(S.turn))return;
+  if(S.acts>0){endTurn();return}
+  cpuTurn(gen);
+}
+async function cpuTurn(g){
+  thinking=true;render();
+  await sleep(600+Math.random()*300);
+  if(g!==gen)return;
+  const m=await cpuChoose();
+  if(g!==gen)return;
+  thinking=false;
+  await executeTurn(m,g);
+}
+// plays a whole CPU turn with animation
+async function executeTurn(m,g){
+  if(m.card>=0){
+    const k=S.cards[S.turn].indexOf(m.card);
+    SND.SE.card(m.card);
+    flash={p:S.turn,k};S.last=`<b>${nm(S.turn)}</b>が<span class="tag" style="color:var(--k${m.card})">「${CARDS[m.card].name}」</span>を使った！`;
+    busy=true;render();busy=false;
+    await sleep(reduce?300:900);flash=null;
+    if(g!==gen)return;
+  }
+  for(let i=0;i<m.acts.length;i++){
+    const st=await performAct(m.acts[i],i===0?m.card:-1,true);
+    if(g!==gen)return;
+    if(st==='over'){finish(S.turn);doPop();return}
+    render();doPop();
+    if(i<m.acts.length-1){await sleep(450);if(g!==gen)return}
+  }
+  endTurn();
+}
+const handEl=(p,i)=>$(`hand-${p}-${i}`);
+function animAttack(a,b){
+  if(reduce||!a||!b)return Promise.resolve();
+  const ra=a.getBoundingClientRect(),rb=b.getBoundingClientRect();
+  const dx=(rb.left+rb.width/2)-(ra.left+ra.width/2),dy=(rb.top+rb.height/2)-(ra.top+ra.height/2);
+  a.style.zIndex=5;
+  return a.animate([{transform:'translate(0,0)'},{transform:`translate(${dx*.62}px,${dy*.62}px) scale(1.05)`,offset:.55},{transform:'translate(0,0)'}],{duration:480,easing:'cubic-bezier(.3,.7,.3,1)'}).finished.catch(()=>{});
+}
+function animSplit(p){
+  if(reduce)return Promise.resolve();
+  return Promise.all([0,1].map(k=>{const e=handEl(p,k);return e?e.animate([{transform:'translateX(0)'},{transform:`translateX(${k?-18:18}px)`},{transform:'translateX(0)'}],{duration:380,easing:'ease-in-out'}).finished.catch(()=>{}):null}));
+}
+function floatOn(p,i,text){
+  const e=handEl(p,i);if(!e)return;
+  if(!reduce)e.animate([{transform:'scale(1)'},{transform:'scale(1.12)'},{transform:'scale(1)'}],{duration:320,easing:'ease-out'});
+  const f=document.createElement('span');f.className='float';f.textContent=text;e.appendChild(f);
+  setTimeout(()=>f.remove(),1050);
+}
+function doPop(){
+  const x=lastPop;lastPop=null;if(!x)return;
+  const {a,p,before,fx}=x,q=1-p;
+  if(a.t==='swap'){floatOn(p,a.from,'⇄');floatOn(q,a.to,'⇄');return}
+  if(a.t==='split'||a.t==='pass')return;
+  const tp=a.t==='atk'?q:p,v=S.hands[tp][a.to],pw=L.power(before,p,a,fx);
+  floatOn(tp,a.to,a.t==='atk'&&fx===2?'無効！':v===0?'消えた！':`+${pw}`);
+}
+// state change of one action (no animation)
+// 攪乱: pool both hands and deal them back, keeping each player's count (seeded so 待った cannot re-roll it)
+function shuffleHands(){
+  let s=(S.seed+S.hist.length*7919)%2147483647||1;const rnd=()=>{s=(s*16807)%2147483647;return s/2147483647};
+  const pool=S.cards[0].concat(S.cards[1]),n0=S.cards[0].length;
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}
+  S.cards=[pool.slice(0,n0).sort(),pool.slice(n0).sort()];
+}
+function coreAct(a,card,cancel){
+  const p=S.turn,q=1-p,before=L.clone(S.hands),fx=S.fx;
+  if(S.acts===0){
+    S.hist.push(JSON.parse(JSON.stringify({hands:S.hands,cards:S.cards,turn:S.turn,fx:S.fx,seen:S.seen,last:S.last,logLen:S.log.length,got:S.got,peek:S.peek})));
+    S.cur={card,acts:[],pre:JSON.parse(JSON.stringify({hands:S.hands,cards:S.cards,fx:S.fx}))};
+  }
+  S.cur.acts.push(a);
+  S.hands=L.applyAct(before,p,a,fx);
+  if(card>=0){
+    S.cards[p].splice(S.cards[p].indexOf(card),1);S.usedCard=true;
+    if(cancel)S.cards[q].splice(S.cards[q].indexOf(L.MIKIRI),1);
+    else{
+      if(card===1)S.pend=1;if(card===2)S.pend=2;if(card===3)S.ren=true;
+      if(card===L.PEEK)S.peek[p]=2; // lasts through the rest of this turn and the player's next turn
+      if(card===L.SHUF)shuffleHands();
+    }
+  }
+  S.acts++;
+  S.last=describe(before,p,a,card,fx,S.ren&&S.acts===2,cancel);
+  S.armed=null;
+  lastPop={a,p,before,fx};
+  if(L.dead(S.hands[q]))return 'over';
+  if(S.ren&&S.acts===1)return 'again';
+  return 'done';
+}
+async function performAct(a,card,cardSfxDone){
+  busy=true;
+  const p=S.turn,q=1-p;
+  // the opponent's 見切り answers any of the five action cards at once (not 透視 / 攪乱)
+  const cancel=L.reacts(card)&&S.cards[q].includes(L.MIKIRI);
+  if(cancel){
+    a=L.plain(a);
+    if(!cardSfxDone)SND.SE.card(card);
+    flash={p:q,k:S.cards[q].indexOf(L.MIKIRI)};
+    S.last=`<span class="tag" style="color:var(--k5)">【見切り】</span><b>${nm(q)}</b>が<b>${nm(p)}</b>の「${CARDS[card].name}」を見切った！`;
+    render();
+    setTimeout(()=>SND.SE.mikiri(),cardSfxDone?0:180);
+    await sleep(reduce?350:950);flash=null;cardSfxDone=true;
+  }
+  render();
+  // sounds: the card at once, the hit when the hands touch
+  const before=S.hands,fx=S.fx,n=L.applyAct(before,p,a,fx);
+  if(card>=0&&!cardSfxDone)SND.SE.card(card);
+  const hit=()=>{
+    if(a.t==='split')SND.SE.split();
+    else if(a.t==='swap')SND.SE.swap();
+    else{const tp=a.t==='atk'?q:p;SND.SE.attack(L.power(before,p,a,fx),n[tp][a.to]===0,a.t==='atk'&&fx===2)}
+  };
+  if(a.t==='pass'){}else if(reduce||a.t==='split')hit();else setTimeout(hit,card>=0&&!cardSfxDone?280:265);
+  if(a.t==='atk'||a.t==='swap')await animAttack(handEl(p,a.from),handEl(q,a.to));
+  else if(a.t==='self')await animAttack(handEl(p,a.from),handEl(p,a.to));
+  else if(a.t==='split')await animSplit(p);
+  else await sleep(250);
+  const st=coreAct(a,card,cancel);
+  busy=false;
+  return st;
+}
+async function runHuman(a){
+  if(!canAct())return;
+  const g=gen;
+  const st=await performAct(a,armedType());
+  if(g!==gen)return;
+  if(st==='over'){finish(S.turn);doPop();return}
+  if(st==='again'){autoSel();render();doPop();return}
+  endTurn();doPop();
+}
+function showResultSoon(){
+  const g=gen;setTimeout(()=>{if(g===gen&&S.phase==='over'&&S.result){S.result.show=true;render()}},900);
+}
+function logTurn(postKey){if(S.cur)S.log.push({p:S.turn,pre:S.cur.pre,card:S.cur.card,acts:S.cur.acts,post:postKey});S.cur=null}
+function finish(winner){
+  logTurn(L.enc(S.hands,1-S.turn,S.pend,codes()[0],codes()[1]));
+  S.phase='over';S.result={winner,show:false};S.sel=null;
+  SND.SE.end(S.mode==='pvp'||winner===0?'win':'lose');
+  render();showResultSoon();
+}
+// switch turns; returns true when the game ended in a draw
+function coreEndTurn(){
+  if(S.got)S.got[S.turn]=null;
+  if(S.peek&&S.peek[S.turn])S.peek[S.turn]=Math.max(0,(+S.peek[S.turn])-1); // 透視 wears off at the end of the user's next turn
+  {const c=codes();logTurn(L.enc(S.hands,1-S.turn,S.pend,c[0],c[1]))}
+  S.turn=1-S.turn;S.fx=S.pend;S.pend=0;S.acts=0;S.ren=false;S.usedCard=false;S.armed=null;
+  const key=stateKey();S.seen[key]=(S.seen[key]||0)+1;
+  if(S.seen[key]>=3){S.phase='over';S.result={draw:true,show:false,reason:'rep'};return true}
+  return false;
+}
+function endTurn(){
+  if(coreEndTurn()){S.sel=null;SND.SE.end('draw');render();showResultSoon();return}
+  if(passMode()){ // hide the board, then ask for the device to be handed over
+    S.handoff=true;handDelay=true;S.sel=null;render();
+    const g=gen;setTimeout(()=>{if(g===gen){handDelay=false;render()}},900);
+    return;
+  }
+  autoSel();render();scheduleCpu();
+}
+function undoable(){
+  if(busy||!(S.phase==='play'||S.phase==='over')||!S.hist.length)return false;
+  return S.mode==='pvp'||S.hist.some(h=>h.turn===0);
+}
+function undo(){
+  if(!undoable())return;
+  let idx=S.hist.length-1;
+  if(S.mode==='cpu')while(idx>=0&&S.hist[idx].turn!==0)idx--;
+  if(idx<0)return;
+  gen++;thinking=false;
+  const h=S.hist[idx];S.hist=S.hist.slice(0,idx);
+  Object.assign(S,{hands:h.hands,cards:h.cards,turn:h.turn,fx:h.fx,seen:h.seen,last:h.last,pend:0,acts:0,ren:false,usedCard:false,armed:null,phase:'play',result:null,
+    log:S.log.slice(0,h.logLen||0),got:h.got||[null,null],peek:h.peek||[false,false],cur:null,hint:null,review:null,reviewOpen:false});
+  handDelay=false;S.handoff=passMode()&&S.view!==S.turn;
+  autoSel();render();
+}
+function onHand(p,i){
+  if(!canAct())return;
+  const at=armedType(),me=S.hands[S.turn];
+  if(p===S.turn){
+    if(S.sel===i)S.sel=null;
+    else if(S.sel!==null&&selfAllowed(at)&&me[S.sel]>0&&me[i]>0){runHuman({t:'self',from:S.sel,to:i});return}
+    else S.sel=i;
+    render();
+  }else if(S.sel!==null&&validOpp(i)){
+    runHuman(at===4?{t:'swap',from:S.sel,to:i}:at===0?{t:'atk',from:S.sel,to:i,bonus:1}:{t:'atk',from:S.sel,to:i});
+  }
+}
+function onCard(p,k){
+  if(!canAct()||p!==S.turn||S.usedCard||S.acts>0)return;
+  S.armed=S.armed===k?null:k;
+  autoSel();render();
+}
+function openSetup(fromGame){
+  if(busy)return;
+  gen++;thinking=false;
+  S.setupFromGame=fromGame&&S.phase==='play';S.prevPhase=S.phase;S.phase='setup';
+  $('lv'+{weak:'Weak',normal:'Normal',strong:'Strong'}[S.level]).checked=true;
+  $('ruleSplit').checked=S.rules.split;$('ruleSelf').checked=S.rules.self;
+  $('ruleCards').checked=S.cardsOn;$('ruleHide').checked=S.hideCpu;$('rulePass').checked=S.pass;
+  syncSetupVis();render();
+}
+
+/* ---------- events ---------- */
+[$('zone0'),$('zone1')].forEach(z=>z.addEventListener('click',e=>{
+  const c=e.target.closest('.card');
+  if(c&&!c.disabled&&c.dataset.card!==undefined){onCard(+c.dataset.p,+c.dataset.card);return}
+  const b=e.target.closest('.hand');if(b&&!b.disabled)onHand(+b.dataset.p,+b.dataset.i);
+}));
+$('setupForm').addEventListener('change',syncSetupVis);
+$('setupForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  S.level=document.querySelector('input[name=level]:checked').value;
+  S.rules={split:$('ruleSplit').checked,self:$('ruleSelf').checked};
+  S.cardsOn=$('ruleCards').checked;S.hideCpu=$('ruleHide').checked;S.pass=$('rulePass').checked;
+  S.setupFromGame=false;S.last=null;
+  S.phase='janken';S.jk=null;render();
+});
+$('setupClose').onclick=()=>{S.phase=S.prevPhase||'play';S.setupFromGame=false;render();scheduleCpu()};
+$('btnSetup').onclick=()=>openSetup(true);
+function goTitle(){if(busy)return;gen++;thinking=false;S.phase='title';S.setupFromGame=false;S.handoff=false;render()}
+function chooseMode(m){S.mode=m;openSetup(false)}
+$('titleCpu').onclick=()=>chooseMode('cpu');
+$('titlePvp').onclick=()=>chooseMode('pvp');
+$('titleRules').onclick=()=>{S.rulesOpen=true;render()};
+$('titleAbout').onclick=()=>{S.aboutOpen=true;render()};
+$('aboutClose').onclick=()=>{S.aboutOpen=false;render()};
+$('aboutVer').textContent='バージョン '+VERSION;
+if(TIP_URL){$('tipLink').href=TIP_URL;$('tipBox').hidden=false}
+$('setupBack').onclick=goTitle;
+// the title hands: a copy baked ahead of time is shown until the live renderer is ready, so the page opens on the 3D hands
+const TITLE_PRE=["data:image/webp;base64,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", "data:image/webp;base64,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"];
+const titleHand=p=>HAND3D.get(1,p)?handArt(1,p,false):`<img class="h3d" src="${TITLE_PRE[p]}" alt="" draggable="false">`;
+function drawTitleArt(){$('titleArt').innerHTML=`<div class="th th-top">${titleHand(1)}</div><div class="th th-bot">${titleHand(0)}</div>`}
+drawTitleArt();
+HAND3D.onReady(()=>{
+  drawTitleArt();
+  const cup=HAND3D.get('cup',0);
+  if(cup)['cupB','cupT'].forEach(id=>{$(id).innerHTML=`<img src="${cup}" alt="" draggable="false">`;$(id).hidden=false});
+  render();
+});
+function syncVol(){
+  const v=SND.vol();
+  $('volBgm').value=v.bgm;$('volBgmOut').textContent=v.bgm;
+  $('volSe').value=v.se;$('volSeOut').textContent=v.se;
+}
+function openSound(){syncVol();S.soundOpen=true;render()}
+$('titleSound').onclick=openSound;
+$('setupSound').onclick=openSound;
+$('soundClose').onclick=()=>{S.soundOpen=false;render()};
+$('volBgm').addEventListener('input',e=>{SND.setVol('bgm',+e.target.value);$('volBgmOut').textContent=e.target.value});
+$('volSe').addEventListener('input',e=>{SND.setVol('se',+e.target.value);$('volSeOut').textContent=e.target.value});
+$('volSe').addEventListener('change',()=>SND.SE.blip());
+$('seTest').onclick=()=>{const k=$('seTest').dataset.k|0;$('seTest').dataset.k=(k+1)%4;
+  [()=>SND.SE.attack(2,false,false),()=>SND.SE.card(3),()=>SND.SE.split(),()=>SND.SE.attack(3,true,false)][k]()};
+$('btnRules').onclick=()=>{S.rulesOpen=true;render()};
+$('rulesClose').onclick=()=>{S.rulesOpen=false;render()};
+$('btnUndo').onclick=undo;
+$('cardList').innerHTML=CARDS.map((c,t)=>`<div><span class="card t${t}" aria-hidden="true">${cardFace(t)}</span><span><b style="color:var(--k${t})">${c.name}</b>${c.desc}</span></div>`).join('');
+
+/* ---------- boot (keeps an in-progress local game across page updates) ---------- */
+function start(data){
+  if(data&&data.hands&&data.phase&&data.cards){Object.assign(S,data);S.rulesOpen=false;if(S.phase==='play')S.armed=null}
+  if(S.mode!=='cpu'&&S.mode!=='pvp'){S.mode='cpu';S.phase='title'}
+  S.soundOpen=false;S.aboutOpen=false;S.reviewOpen=false;if(!S.log)S.log=[];if(!S.got)S.got=[null,null];if(!S.peek)S.peek=[false,false];if(S.phase==='trade')S.phase='title';
+  handDelay=false;
+  autoSel();render();
+  setTimeout(()=>HAND3D.build(),60);
+  if(S.phase==='play'){if(S.mode==='cpu')ensureSolver();scheduleCpu()}
+}
+start({});
+})();
+
+</script>
+
+</body>
+</html>
