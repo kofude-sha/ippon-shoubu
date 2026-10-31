@@ -181,6 +181,9 @@ header.top{position:relative;z-index:5;display:flex;align-items:center;justify-c
 .primary{background:var(--ink);color:var(--card);border:0;border-radius:14px;padding:13px;font-weight:400;font-size:1.05rem;cursor:pointer}
 .about p{margin:0;line-height:1.7}.about .credits{margin:0;padding-left:1.2em;line-height:1.7;font-size:.9rem}
 .tipbtn{display:block;text-align:center;text-decoration:none;margin-top:8px}
+.row .tipbtn{margin-top:0;display:grid;place-items:center}
+.tutstep{display:block;font-size:.72rem;letter-spacing:.1em;color:var(--muted)}
+.tutok{display:block;color:var(--good);margin-top:2px}.tutno{color:var(--red)}.tuttext{color:var(--ink)}
 .ghost{background:none;border:2px solid var(--ink);border-radius:14px;padding:11px;font-weight:400;cursor:pointer}
 .row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1}
 .jk{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
@@ -209,7 +212,7 @@ header.top{position:relative;z-index:5;display:flex;align-items:center;justify-c
 .big.win{color:var(--blue)} .big.lose{color:var(--red)}
 .center{text-align:center;color:var(--muted)}
 .titlebox{margin:auto;width:min(420px,100%);display:grid;gap:clamp(14px,3vh,26px);justify-items:center;text-align:center;padding-block:8px}
-.tart{position:relative;width:min(240px,62vw);aspect-ratio:1.3186}
+.tart{position:relative;width:min(240px,62vw,25vh);aspect-ratio:1.3186}
 .th{position:absolute;left:50%;width:32%;translate:-50% 0}
 .th svg{width:100%;height:auto;display:block}
 .th img{width:100%}
@@ -231,13 +234,14 @@ header.top{position:relative;z-index:5;display:flex;align-items:center;justify-c
 .tbig span{font-family:var(--font-display);font-size:1.45rem;line-height:1.2}
 .tbig small{font-size:.76rem;font-weight:400;opacity:.92}
 .tbig.b{background:var(--blue)} .tbig.r{background:var(--red)}
+.tbig.t{background:var(--card);color:var(--ink)!important;padding:10px 12px}.tbig.t span{font-size:1.1rem}
 .tbig:hover{transform:translate(-1px,-1px);box-shadow:6px 6px 0 var(--ink)}
 .tbig:active{transform:translate(3px,3px);box-shadow:2px 2px 0 var(--ink)}
 .tlinks{display:flex;gap:8px 10px;justify-content:center;flex-wrap:wrap}
 .vol{display:grid;grid-template-columns:4.5em 1fr 2.5em;align-items:center;gap:10px;font-weight:400}
 .vol input{width:100%;accent-color:var(--blue)}
 .vol output{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
-.tlink{background:var(--washi)!important;border-radius:999px;padding:6px 14px!important;color:var(--ink)!important;background:none;border:0;font-weight:400;color:var(--muted);text-decoration:underline;text-underline-offset:4px;cursor:pointer;padding:6px;justify-self:center}
+.tlink{background:var(--washi)!important;border-radius:999px;padding:5px 11px!important;font-size:.88rem;color:var(--ink)!important;background:none;border:0;font-weight:400;color:var(--muted);text-decoration:underline;text-underline-offset:4px;cursor:pointer;padding:6px;justify-self:center}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tbig{color:#0f161c}}
 :root[data-theme="dark"] .tbig{color:#0f161c}
 .pv{position:absolute;left:50%;transform:translateX(-50%);top:30%;z-index:4;background:var(--ink);color:var(--card);font-weight:400;font-size:.78rem;border-radius:999px;padding:3px 9px;white-space:nowrap;pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,.25)}
@@ -354,6 +358,7 @@ header.top{position:relative;z-index:5;display:flex;align-items:center;justify-c
     <div class="tbtns">
       <button type="button" class="tbig b" id="titleCpu"><span>CPUと対戦</span><small>強さは3段階。「つよい」は全局面を読み切り</small></button>
       <button type="button" class="tbig r" id="titlePvp"><span>ふたりで対戦</span><small>1台の端末を交互に渡して</small></button>
+      <button type="button" class="tbig t" id="titleTut"><span>はじめての方へ：チュートリアル</span><small>操作しながら数分でルールと技を覚える</small></button>
       <div class="tlinks"><button type="button" class="tlink" id="titleRules">ルール</button><button type="button" class="tlink" id="titleSound">BGM・効果音</button><button type="button" class="tlink" id="titleAbout">このゲームについて</button></div>
     </div>
   </div>
@@ -427,6 +432,13 @@ header.top{position:relative;z-index:5;display:flex;align-items:center;justify-c
       </ul></div>
     <div><div class="lbl">データの扱い</div><p class="note2">このゲームは個人情報を集めません。音量の設定だけを、この端末のブラウザに保存します。</p></div>
     <button type="button" class="primary" id="aboutClose">閉じる</button>
+  </div>
+</div>
+<div class="overlay" id="ovLeave" hidden>
+  <div class="sheet">
+    <h2>外部サイトを開きます</h2>
+    <p>応援サービス「OFUSE」の小筆舎のページを、新しいタブで開きます。</p>
+    <div class="row"><button type="button" class="ghost" id="leaveNo">やめる</button><a class="primary tipbtn" id="leaveGo" href="#" target="_blank" rel="noopener">開く</a></div>
   </div>
 </div>
 <div class="overlay" id="ovSound" hidden>
@@ -1197,8 +1209,10 @@ const CARDS=[
   {name:'攪乱',g:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h4.5c3.5 0 5.5 10 9 10H21M3 17h4.5c1.6 0 2.8-2 3.9-4.3M14.4 9.3C15.2 8 16 7 17 7h4M18.5 4.5L21 7l-2.5 2.5M18.5 14.5L21 17l-2.5 2.5" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>',desc:'自分と相手の手札をまとめてシャッフルし、それぞれの枚数はそのままで配り直す。使った手番にそのまま行動できる。',how:'このまま普通に行動すると、お互いの手札がシャッフルされて配り直されます。'}
 ];
 // the support link shown in 「このゲームについて」 (hidden while empty) and the version label
-const TIP_URL='';
-const VERSION='1.0';
+const TIP_URL='https://ofuse.me/kofude_sha';
+const VERSION='1.1';
+// one-line effects, shown next to a card's name whenever it is played
+const SHORT=['指の数＋1で攻撃','相手の次の番の攻撃を−1','相手の次の番の攻撃を無効','この番に2回行動','手の本数を交換','相手の技を自動で打ち消す','次の番まで相手の手札が見える','お互いの手札をシャッフル'];
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 let S={mode:'cpu',level:'normal',rules:{split:true,self:true},cardsOn:true,hideCpu:true,pass:true,view:0,handoff:false,
   hands:[[1,1],[1,1]],cards:[[],[]],turn:0,fx:0,pend:0,acts:0,ren:false,usedCard:false,armed:null,
@@ -1295,7 +1309,7 @@ async function cpuChoose(){
 /* ---------- text ---------- */
 function describe(before,p,a,card,fx,second,cancel){
   const q=1-p,n=L.applyAct(before,p,a,fx);
-  const tag=card>=0?`<span class="tag" style="color:var(--k${card})">【${CARDS[card].name}${cancel?'→見切り':''}】</span>`:second?`<span class="tag" style="color:var(--k3)">【連撃2回目】</span>`:'';
+  const tag=card>=0?`<span class="tag" style="color:var(--k${card})">【${CARDS[card].name}${cancel?'→見切り':'：'+SHORT[card]}】</span>`:second?`<span class="tag" style="color:var(--k3)">【連撃2回目】</span>`:'';
   let s;
   if(a.t==='pass')s=`<b>${nm(p)}</b>の入れ替えは、${nm(q)}の見切りで不発`;
   else if(a.t==='split')s=`<b>${nm(p)}</b>が分身：左${before[p][0]}・右${before[p][1]} → 左${n[p][0]}・右${n[p][1]}`;
@@ -1373,14 +1387,14 @@ const cardFace=t=>`<span class="g">${CARDS[t].g}</span><span class="n">${CARDS[t
 
 /* ---------- rendering ---------- */
 const $=id=>document.getElementById(id);
-const canAct=()=>S.phase==='play'&&!busy&&!thinking&&!S.handoff&&isHuman(S.turn);
+const canAct=()=>S.phase==='play'&&!busy&&!thinking&&!S.handoff&&isHuman(S.turn)&&!(S.tut&&(S.tut.done||S.tut.waitCpu));
 const selfAllowed=at=>S.rules.self&&at!==0&&at!==4;
 function validOpp(j){const at=armedType(),me=S.hands[S.turn],op=S.hands[1-S.turn];return op[j]>0&&(at!==4||op[j]!==me[S.sel])}
 function cardUsable(t){return t===L.MIKIRI?false:t===0||t===4?L.cardActs(S.hands,S.turn,t).length>0:true}
 // slot 0 = bottom of the screen, slot 1 = top
 function renderZone(slot){
   const p=slot===0?bottom():1-bottom();
-  const z=$('zone'+slot),act=canAct(),order=slot===0?[0,1]:[1,0],me=S.hands[S.turn],at=armedType(),hint=currentHint();
+  const z=$('zone'+slot),act=canAct(),order=slot===0?[0,1]:[1,0],me=S.hands[S.turn],at=armedType(),hint=S.tut?tutHint():currentHint();
   let hands='';
   for(const i of order){
     const v=S.hands[p][i],cls=['hand'];
@@ -1485,13 +1499,14 @@ function renderMid(){
   }
   if(thinking){t.innerHTML='CPUが考え中…';return}
   t.innerHTML=`<mark>${nm(S.turn)}</mark>の番`;
+  if(S.tut&&renderTutMid(t,a))return;
   if(!canAct())return;
   const me=S.hands[S.turn],at=armedType(),color=S.turn===1?' red':'',hint=currentHint();
   let html='';
-  if((S.seen[stateKey()]||0)>=2&&S.acts===0)html+=`<span class="hint warn">⚠ この局面は2回目です。もう一度同じ局面になると引き分けになります</span><span class="brk"></span>`;
+  if(!S.tut&&(S.seen[stateKey()]||0)>=2&&S.acts===0)html+=`<span class="hint warn">⚠ この局面は2回目です。もう一度同じ局面になると引き分けになります</span><span class="brk"></span>`;
 
   if(S.ren&&S.acts===1){
-    html+=`<span class="hint"><b style="color:var(--k3)">連撃</b>：もう1回行動できます</span><button class="chip${color}" type="button" id="endRen">ここで終える</button><span class="brk"></span>`;
+    html+=`<span class="hint"><b style="color:var(--k3)">連撃</b>：もう1回行動できます</span>${S.tut?'':`<button class="chip${color}" type="button" id="endRen">ここで終える</button>`}<span class="brk"></span>`;
   }else if(at>=0){
     html+=`<span class="hint"><b style="color:var(--k${at})">${CARDS[at].name}</b>：${CARDS[at].how}（カードをもう一度タップで取り消し）</span><span class="brk"></span>`;
   }
@@ -1510,7 +1525,7 @@ function renderMid(){
       const dr=leadsToDraw(L.applyAct(S.hands,S.turn,m,S.fx),at);
       return `<button type="button" class="chip${color}${hs===m.v.join(',')?' hintc':''}${dr?' warnchip':''}" data-split="${k}"><small>左</small>${m.v[0]}<small>右</small>${m.v[1]}${dr?'<small>（引き分け）</small>':''}</button>`}).join('');
   }
-  if(S.acts===0)html+=`<button class="chip ghostchip" type="button" id="hintBtn" ${hintBusy?'disabled':''}>${hintBusy?'考えています…':hint?'ヒントを隠す':'ヒント'}</button>`;
+  if(S.acts===0&&!S.tut)html+=`<button class="chip ghostchip" type="button" id="hintBtn" ${hintBusy?'disabled':''}>${hintBusy?'考えています…':hint?'ヒントを隠す':'ヒント'}</button>`;
   a.innerHTML=html;
   a.querySelectorAll('[data-split]').forEach(b=>b.onclick=()=>runHuman(splits[+b.dataset.split]));
   const er=$('endRen');if(er)er.onclick=()=>{if(canAct())endTurn()};
@@ -1537,6 +1552,7 @@ function renderOverlays(){
   $('ovRules').hidden=!S.rulesOpen;
   $('ovSound').hidden=!S.soundOpen;
   $('ovAbout').hidden=!S.aboutOpen;
+  $('ovLeave').hidden=!S.leaveOpen;
   $('ovHand').hidden=!(S.handoff&&!handDelay&&S.phase==='play');
   if(!$('ovHand').hidden)renderHandoff();
   $('setupClose').hidden=!S.setupFromGame;
@@ -1553,10 +1569,10 @@ function musicFor(){
 function render(){
   SND.music(musicFor());
   renderZone(1);renderZone(0);renderKnees();renderMid();renderOverlays();
-  $('modeLabel').textContent=(S.mode==='cpu'?`CPU対戦・${LV[S.level]}`:'ふたりで対戦')+(S.cardsOn?'・技カード':'');
+  $('modeLabel').textContent=S.tut?'チュートリアル':(S.mode==='cpu'?`CPU対戦・${LV[S.level]}`:'ふたりで対戦')+(S.cardsOn?'・技カード':'');
   $('btnUndo').disabled=!undoable();
   const again=$('againMid');
-  if(again)again.onclick=()=>{S.phase='janken';S.jk=null;render()};
+  if(again)again.onclick=()=>{if(S.tut){startTutorial();return}S.phase='janken';S.jk=null;render()};
 }
 function syncSetupVis(){
   const cpu=S.mode==='cpu';
@@ -1652,6 +1668,93 @@ function renderTrade(){
     $('trStart').onclick=()=>{const f=T.first;S.trade=null;beginPlay(f,true)};
   }
 }
+/* ---------- tutorial: short guided boards, one rule or card each ---------- */
+// hands are [左手, 右手]; hl = what to light up for each action of the step; ok = whether an action is the one asked for
+const TUT=[
+ {title:'攻撃する',text:'自分の手をタップして選び、相手の手（上側）をタップすると攻撃。相手の指が、自分の指の本数ぶん増えます。',
+  set:{hands:[[1,1],[1,1]],cards:[[],[]]},hl:[{t:'atk',from:1,to:0}],ok:a=>a.t==='atk',
+  no:'自分の手を選んでから、相手の手（上側）をタップしてみましょう。',done:'相手の手が 1＋1＝2本 になりました。'},
+ {title:'ちょうど5本で消える',text:'指がちょうど5本になった手は消えます。右手（3本）で、相手の2本の手を攻撃してみましょう。',
+  set:{hands:[[1,3],[2,1]],cards:[[],[]]},hl:[{t:'atk',from:1,to:0}],ok:a=>a.t==='atk'&&a.from===1&&a.to===0,
+  no:'光っている右手（3本）を選び、相手の2本の手をタップしてください。',done:'3＋2＝5本で、相手の手が消えました！ 先に相手の両手を消した方の勝ちです。'},
+ {title:'5本を超えたら',text:'5本を超えると、超えた分だけ指が残ります。左手（4本）で、相手の3本の手を攻撃してみましょう。',
+  set:{hands:[[4,1],[1,3]],cards:[[],[]]},hl:[{t:'atk',from:0,to:1}],ok:a=>a.t==='atk'&&a.from===0&&a.to===1,
+  no:'光っている左手（4本）を選び、相手の3本の手をタップしてください。',done:'4＋3＝7本 → 5を引いた2本が残りました。消すには「ちょうど5本」を狙いましょう。'},
+ {title:'自分の手を攻撃',text:'自分のもう片方の手を攻撃することもできます。左手（2本）を選び、自分の右手（1本）をタップしましょう。',
+  set:{hands:[[2,1],[1,1]],cards:[[],[]]},hl:[{t:'self',from:0,to:1}],ok:a=>a.t==='self',
+  no:'左手（2本）を選んでから、自分の右手（1本）をタップしてください。',done:'右手が 1＋2＝3本 になりました。本数を整えて、次の攻撃を狙いやすくできます。'},
+ {title:'分身',text:'片手が消えたら、残った指を両手に分け直して復活できます。下の「分身する」のボタンから好きな分け方を選びましょう。',
+  set:{hands:[[0,4],[2,3]],cards:[[],[]]},ok:a=>a.t==='split',
+  no:'中央の「分身する」の横にあるボタンを押してみましょう。',done:'両手が復活しました。ただし、左右を入れ替えるだけの分け方はできません。'},
+ {title:'技カード：強打',text:'技カードは、先にカードをタップしてから行動します。「強打」をタップして、右手（1本）で相手の3本の手を攻撃しましょう。',
+  set:{hands:[[2,1],[3,2]],cards:[[0],[]]},hl:[{card:0,t:'atk',from:1,to:0}],ok:(a,at)=>at===0&&a.from===1&&a.to===0,
+  no:'まず下の「強打」のカードをタップし、光っている手で攻撃してください。',done:'強打で 1＋1＝2 の攻撃。3＋2＝5本で消えました！ 技カードは1枚1回まで、1手番に1枚だけ使えます。'},
+ {title:'技カード：盾',text:'「盾」を使うと、相手の次の番の攻撃が無効になります。盾をタップしてから、好きな手で攻撃してみましょう。そのあとCPUの番になります。',
+  set:{hands:[[1,1],[3,4]],cards:[[2],[]]},hl:[{card:2,t:'atk',from:0,to:1}],ok:(a,at)=>at===2,cpu:true,
+  no:'まず下の「盾」のカードをタップしてから攻撃してください。',done:'CPUの攻撃は、盾で無効になりました。似たカードの「弱体」は、相手の次の番の攻撃を−1にします。'},
+ {title:'見切り',text:'相手の手札に「見切り」があると、こちらの技カードは自動で打ち消されます（行動は普通の行動になります）。試しに「弱体」を使って攻撃してみましょう。',
+  set:{hands:[[1,1],[1,2]],cards:[[1],[5]]},hl:[{card:1,t:'atk',from:0,to:0}],ok:(a,at)=>at===1,
+  no:'下の「弱体」のカードをタップしてから攻撃してください。',done:'弱体は見切られました。でも相手の見切りも1枚消えます。安いカードで先に見切りを消し、本命の技を通すのがコツです。'},
+ {title:'連撃でとどめ',text:'「連撃」を使うと、この番に2回行動できます。左手（1本）で相手の4本の手を、続けて右手（2本）で相手の3本の手を攻撃し、両手を消しましょう！',
+  set:{hands:[[1,2],[4,3]],cards:[[3],[]]},hl:[{card:3,t:'atk',from:0,to:0},{t:'atk',from:1,to:1}],
+  ok:(a,at,i)=>i===0?(at===3&&a.t==='atk'&&a.from===0&&a.to===0):(a.t==='atk'&&a.from===1&&a.to===1),
+  no:'「連撃」をタップしてから、光っている手どうしで攻撃してください。',done:''},
+];
+function startTutorial(){
+  if(busy)return;
+  if(!S.tut)S.tutPrev={mode:S.mode,level:S.level,rules:S.rules,cardsOn:S.cardsOn,hideCpu:S.hideCpu};
+  Object.assign(S,{mode:'cpu',level:'normal',rules:{split:true,self:true},cardsOn:true,hideCpu:false,setupFromGame:false,rulesOpen:false,aboutOpen:false});
+  loadTut(0);
+}
+function loadTut(i){
+  gen++;busy=false;thinking=false;
+  resetBoard(0);
+  const st=TUT[i];
+  S.hands=JSON.parse(JSON.stringify(st.set.hands));S.cards=JSON.parse(JSON.stringify(st.set.cards));
+  S.seen={};S.last=null;S.lastLine=null;S.peek=[0,0];S.seed=1;S.got=[null,null];S.jk=null;
+  S.tut={i,done:false,msg:null,waitCpu:false};
+  S.phase='play';S.view=0;S.handoff=false;sol=null;solJob=null;
+  autoSel();render();
+}
+function exitTutorial(){
+  if(!S.tut&&!S.tutPrev)return;
+  if(S.tutPrev)Object.assign(S,S.tutPrev);
+  S.tut=null;S.tutPrev=null;
+}
+// the hand / card to light up for the action the step asks for
+function tutHint(){
+  if(!S.tut||S.tut.done||S.tut.waitCpu)return null;
+  const h=(TUT[S.tut.i].hl||[])[S.acts];
+  return h?{m:{card:h.card===undefined?-1:h.card,acts:[{t:h.t,from:h.from,to:h.to}]}}:null;
+}
+function tutCheck(a){
+  const st=TUT[S.tut.i];
+  if(st.ok(a,armedType(),S.acts))return true;
+  S.tut.msg=st.no;render();return false;
+}
+// after the player's action: either the step is done, or the CPU answers first
+function tutAfter(){
+  const st=TUT[S.tut.i];
+  if(!st.cpu){S.tut.done=true;S.tut.msg=null;render();return}
+  coreEndTurn();S.tut.waitCpu=true;S.sel=null;render();
+  const g=gen,h=S.hands;
+  const m={card:-1,acts:[{t:'atk',from:h[1][0]>=h[1][1]?0:1,to:h[0][0]>0?0:1}]};
+  setTimeout(()=>{if(g===gen)executeTurn(m,g)},800);
+}
+function renderTutMid(t,a){
+  const st=TUT[S.tut.i];
+  t.innerHTML=`<span class="tutstep">チュートリアル ${S.tut.i+1}／${TUT.length}</span>${st.title}`;
+  if(S.tut.done){
+    $('last').innerHTML=(S.last?S.last+'<br>':'')+`<span class="tutok">${st.done}</span>`;
+    a.innerHTML=`<button class="chip" type="button" id="tutNext">次へ</button><button class="chip ghostchip" type="button" id="tutQuit">やめる</button>`;
+    $('tutNext').onclick=()=>{S.tut.i+1<TUT.length?loadTut(S.tut.i+1):null};
+    $('tutQuit').onclick=goTitle;
+    return true;
+  }
+  if(S.tut.waitCpu){$('last').innerHTML=S.last||'';a.innerHTML='<span class="hint">CPUの番です…</span>';return true}
+  $('last').innerHTML=(S.acts>0&&S.last?S.last+'<br>':'')+(S.tut.msg?`<span class="tutno">${S.tut.msg}</span>`:`<span class="tuttext">${st.text}</span>`);
+  return false;
+}
 /* ---------- review after the game ---------- */
 async function openReview(){
   S.reviewOpen=true;
@@ -1721,6 +1824,17 @@ function renderReview(){
 /* ---------- result ---------- */
 function renderResult(){
   const r=S.result,b=$('resultBody'),n=S.hist.length;
+  if(r.tut){
+    b.innerHTML=`<p class="big win" style="font-size:1.7rem">チュートリアル完了！</p>
+      <p>連撃で2回続けて攻撃し、相手の両手を消しました。CPUも同じように連撃を使ってくるので、相手の手札にも注意しましょう。</p>
+      <p class="note2">ほかの技カード：「入れ替え」は自分と相手の手の本数を交換、「透視」は次の番まで相手の手札が見える、「攪乱」はお互いの手札をシャッフルします。くわしくは「ルール」でいつでも確認できます。</p>
+      <button class="primary" id="tuCpu">CPUと対戦する</button>
+      <div class="row"><button class="ghost" id="tuAgain">もう一度</button><button class="ghost" id="tuTitle">タイトルへ</button></div>`;
+    $('tuCpu').onclick=()=>{exitTutorial();chooseMode('cpu')};
+    $('tuAgain').onclick=startTutorial;
+    $('tuTitle').onclick=goTitle;
+    return;
+  }
   let head;
   if(r.draw)head=`<p class="big">引き分け</p><p class="center">同じ局面が3回くり返されました</p>`;
   else if(S.mode==='pvp')head=`<p class="big ${r.winner===0?'win':'lose'}">${nm(r.winner)}の勝ち！</p>`;
@@ -1772,6 +1886,7 @@ function beginPlay(first,traded){
   autoSel();render();scheduleCpu();
 }
 function scheduleCpu(){
+  if(S.tut)return;
   if(S.mode!=='cpu'||S.phase!=='play'||isHuman(S.turn))return;
   if(S.acts>0){endTurn();return}
   cpuTurn(gen);
@@ -1790,7 +1905,7 @@ async function executeTurn(m,g){
   if(m.card>=0){
     const k=S.cards[S.turn].indexOf(m.card);
     SND.SE.card(m.card);
-    flash={p:S.turn,k};S.last=`<b>${nm(S.turn)}</b>が<span class="tag" style="color:var(--k${m.card})">「${CARDS[m.card].name}」</span>を使った！`;
+    flash={p:S.turn,k};S.last=`<b>${nm(S.turn)}</b>が<span class="tag" style="color:var(--k${m.card})">「${CARDS[m.card].name}」</span>を使った！（${SHORT[m.card]}）`;
     busy=true;render();busy=false;
     await sleep(reduce?300:900);flash=null;
     if(g!==gen)return;
@@ -1855,8 +1970,10 @@ function coreAct(a,card,cancel){
       if(card===L.SHUF)shuffleHands();
     }
   }
+  const line=describe(before,p,a,card,fx,S.ren&&S.acts===1,cancel);
+  S.last=S.acts===1&&S.lastLine?S.lastLine+'<br>'+line:line; // the 2nd action of 連撃 is listed under the 1st
+  S.lastLine=line;
   S.acts++;
-  S.last=describe(before,p,a,card,fx,S.ren&&S.acts===2,cancel);
   S.armed=null;
   lastPop={a,p,before,fx};
   if(L.dead(S.hands[q]))return 'over';
@@ -1897,11 +2014,13 @@ async function performAct(a,card,cardSfxDone){
 }
 async function runHuman(a){
   if(!canAct())return;
+  if(S.tut&&!tutCheck(a))return;
   const g=gen;
   const st=await performAct(a,armedType());
   if(g!==gen)return;
   if(st==='over'){finish(S.turn);doPop();return}
   if(st==='again'){autoSel();render();doPop();return}
+  if(S.tut){tutAfter();doPop();return}
   endTurn();doPop();
 }
 function showResultSoon(){
@@ -1909,6 +2028,7 @@ function showResultSoon(){
 }
 function logTurn(postKey){if(S.cur)S.log.push({p:S.turn,pre:S.cur.pre,card:S.cur.card,acts:S.cur.acts,post:postKey});S.cur=null}
 function finish(winner){
+  if(S.tut){S.phase='over';S.result={winner,show:false,tut:true};S.sel=null;SND.SE.end('win');render();showResultSoon();return}
   logTurn(L.enc(S.hands,1-S.turn,S.pend,codes()[0],codes()[1]));
   S.phase='over';S.result={winner,show:false};S.sel=null;
   SND.SE.end(S.mode==='pvp'||winner===0?'win':'lose');
@@ -1926,6 +2046,7 @@ function coreEndTurn(){
 }
 function endTurn(){
   if(coreEndTurn()){S.sel=null;SND.SE.end('draw');render();showResultSoon();return}
+  if(S.tut&&S.tut.waitCpu){S.tut.waitCpu=false;S.tut.done=true;autoSel();render();return}
   if(passMode()){ // hide the board, then ask for the device to be handed over
     S.handoff=true;handDelay=true;S.sel=null;render();
     const g=gen;setTimeout(()=>{if(g===gen){handDelay=false;render()}},900);
@@ -1934,6 +2055,7 @@ function endTurn(){
   autoSel();render();scheduleCpu();
 }
 function undoable(){
+  if(S.tut)return false;
   if(busy||!(S.phase==='play'||S.phase==='over')||!S.hist.length)return false;
   return S.mode==='pvp'||S.hist.some(h=>h.turn===0);
 }
@@ -1968,6 +2090,7 @@ function onCard(p,k){
 }
 function openSetup(fromGame){
   if(busy)return;
+  if(S.tut){exitTutorial();fromGame=false}
   gen++;thinking=false;
   S.setupFromGame=fromGame&&S.phase==='play';S.prevPhase=S.phase;S.phase='setup';
   $('lv'+{weak:'Weak',normal:'Normal',strong:'Strong'}[S.level]).checked=true;
@@ -1993,15 +2116,22 @@ $('setupForm').addEventListener('submit',e=>{
 });
 $('setupClose').onclick=()=>{S.phase=S.prevPhase||'play';S.setupFromGame=false;render();scheduleCpu()};
 $('btnSetup').onclick=()=>openSetup(true);
-function goTitle(){if(busy)return;gen++;thinking=false;S.phase='title';S.setupFromGame=false;S.handoff=false;render()}
+function goTitle(){if(busy)return;exitTutorial();gen++;thinking=false;S.phase='title';S.setupFromGame=false;S.handoff=false;render()}
 function chooseMode(m){S.mode=m;openSetup(false)}
 $('titleCpu').onclick=()=>chooseMode('cpu');
 $('titlePvp').onclick=()=>chooseMode('pvp');
+$('titleTut').onclick=startTutorial;
 $('titleRules').onclick=()=>{S.rulesOpen=true;render()};
 $('titleAbout').onclick=()=>{S.aboutOpen=true;render()};
 $('aboutClose').onclick=()=>{S.aboutOpen=false;render()};
 $('aboutVer').textContent='バージョン '+VERSION;
-if(TIP_URL){$('tipLink').href=TIP_URL;$('tipBox').hidden=false}
+if(TIP_URL){
+  $('tipLink').href=TIP_URL;$('leaveGo').href=TIP_URL;$('tipBox').hidden=false;
+  // a step before leaving the game for an outside site
+  $('tipLink').onclick=e=>{e.preventDefault();S.leaveOpen=true;render()};
+  $('leaveGo').onclick=()=>{S.leaveOpen=false;setTimeout(render,0)};
+  $('leaveNo').onclick=()=>{S.leaveOpen=false;render()};
+}
 $('setupBack').onclick=goTitle;
 // the title hands: a copy baked ahead of time is shown until the live renderer is ready, so the page opens on the 3D hands
 const TITLE_PRE=["data:image/webp;base64,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", "data:image/webp;base64,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"];
@@ -2037,7 +2167,8 @@ $('cardList').innerHTML=CARDS.map((c,t)=>`<div><span class="card t${t}" aria-hid
 function start(data){
   if(data&&data.hands&&data.phase&&data.cards){Object.assign(S,data);S.rulesOpen=false;if(S.phase==='play')S.armed=null}
   if(S.mode!=='cpu'&&S.mode!=='pvp'){S.mode='cpu';S.phase='title'}
-  S.soundOpen=false;S.aboutOpen=false;S.reviewOpen=false;if(!S.log)S.log=[];if(!S.got)S.got=[null,null];if(!S.peek)S.peek=[false,false];if(S.phase==='trade')S.phase='title';
+  if(S.tut){exitTutorial();S.phase='title'}
+  S.soundOpen=false;S.aboutOpen=false;S.leaveOpen=false;S.reviewOpen=false;if(!S.log)S.log=[];if(!S.got)S.got=[null,null];if(!S.peek)S.peek=[false,false];if(S.phase==='trade')S.phase='title';
   handDelay=false;
   autoSel();render();
   setTimeout(()=>HAND3D.build(),60);
